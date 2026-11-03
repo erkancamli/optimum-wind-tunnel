@@ -8,17 +8,19 @@ const PX=128, BYTES=PX*PX*3;
 
 // ---------- i18n ----------
 const TR={
+ sub:'Bir blok Virginia\'dan çıkıyor ve dünyanın dört bir yanındaki 159 düğüm, validator\'lar oy vermeden önce ona ulaşmak için yarışıyor. libp2p Gossipsub ile Optimum\'un mump2p\'sinin aynı ağ üzerinde bloğu nasıl taşıdığını izle, sonra o ağı boz ve kimin hâlâ zamanında yetiştiğini gör.',
+ tourBtn:'▶ 60 saniyelik turu başlat', c2x:'Bir senaryo dene', labT:'Laboratuvar ayarları', labS:'meraklısı için',
+ close:'Kapat', back:'Geri', next:'İleri',
  fan:'hayran yapımı · resmi bir Optimum ürünü değil', sound:'♪ Dinle', dark:'Koyu', light:'Açık',
  lede:'Aynı Dünya. Aynı kablolar. Aynı blok. <em>Onu taşımanın iki yolu.</em>',
- sub:'Kendi dosyan parçalara bölünüyor ve gerçek Galois cismi aritmetiğiyle kodlanıyor. Sonra gerçek şehirlerin, fiber mesafelerinin ve denizaltı kablo güzergâhlarının üzerine kurulu bir ağda gönderiliyor. Kabloları kes, bir veri merkezini karart ve bloğun attestation sınırından önce nereye yetiştiğini izle.',
- c1:'Senin bloğun', drop:'Buraya bir resim bırak ya da', pick:'dosya seç', kL:'Parça sayısı k (nesil boyutu)',
- c2:'Koşullar', bL:'Ağdaki blok boyutu', lL:'Bağlantı başına paket kaybı', pL:'Bloğun yayınlandığı an', betaL:'Eş başına shard bütçesi (β)',
+ c1:'Senin bloğun', drop:'Buraya bir resim bırak ya da', pick:'dosya seç', kL:'Blok başına shard (k)',
+ c2:'Bir senaryo dene', bL:'Blok boyutu', lL:'Bağlantı başına paket kaybı', pL:'Bloğun yayınlandığı an', betaL:'Eş başına shard bütçesi (β)',
  betaN:'β bant genişliği ile hızı takas eder: her aktarıcı bir eşe, istenmeden önce en fazla β·k/D taze kombinasyon sunar.',
  c3:'Sabotaj', cutN:'Bir kablo koridorunu buradan ya da haritadan kes. O koridordan geçen tüm eş bağlantıları kararır.',
- darkN:'Bir şehri karartmak için düğümlerinden birine tıkla ve sağdaki sondadaki düğmeyi kullan.',
- vD:'Kim nerede kazanıyor', hint:'Düğüme tıkla, sonda ile incele · koridoru kesmek için ✂ rozetine tıkla',
- rlnc:'RLNC shardları', full:'tam blok', probe:'Sonda', rankL:'Rank',
- mxN:'Solda bu düğümün elindeki katsayı matrisi, GF(2⁸) üzerinde basamak formuna indirgenmiş hâli. Köşegende tek parlak pikseller varsa her parça çözülmüş demektir.',
+ darkN:'Bir şehri karartmak için haritada düğümlerinden birine tıkla, sonra sondanın altındaki düğmeyi kullan.', _oldDarkN:'Bir şehri karartmak için düğümlerinden birine tıkla ve sağdaki sondadaki düğmeyi kullan.',
+ vD:'Kim nerede kazanıyor', hint:'Bir düğümü incelemek için herhangi bir noktaya tıkla · kablo koridorunu kesmek için ✂ işaretine tıkla', _oldHint:'Düğüme tıkla, sonda ile incele · koridoru kesmek için ✂ rozetine tıkla',
+ rlnc:'RLNC shardları', full:'tam blok', probe:'Sonda: tek bir düğümün içi', rankL:'Bağımsız shard (rank)',
+ mxN:'Solda bu düğümün elindeki karıştırma tarifleri, çözülebildiği kadar çözülmüş hâlde. Temiz bir köşegen oluştuğunda bloğun her parçası geri kazanılmış demektir.', _oldMxN:'Solda bu düğümün elindeki katsayı matrisi, GF(2⁸) üzerinde basamak formuna indirgenmiş hâli. Köşegende tek parlak pikseller varsa her parça çözülmüş demektir.',
  feedT:'Buraya gelen shardlar',
  h1:'Burada gerçek olan ne',
  r1:'<b>Kodlama.</b> Her shard GF(2⁸) üzerinde rastgele bir katsayı vektörü taşır. Aktarıcılar önce çözmeden, ellerindekini karıştırarak yeniden kodlar. Sonda, Gauss eliminasyonunu dosyanın gerçek baytları üzerinde çalıştırır.',
@@ -45,7 +47,7 @@ function applyLang(){
   $('lEN').setAttribute('aria-pressed',lang==='en'); $('lTR').setAttribute('aria-pressed',lang==='tr');
   $('msg').placeholder=L('…or type a message','…ya da bir mesaj yaz');
   $('k').options[0].textContent=L('4 (mump2p dev default)','4 (mump2p geliştirici varsayılanı)');
-  buildChips(); syncLabels(); writeVerdict(); legend(); inspector(true);
+  buildChips(); syncLabels(); writeVerdict(); legend(); inspector(true); if(typeof refreshTourText==='function') refreshTourText();
 }
 $('lEN').onclick=()=>{lang='en';try{localStorage.setItem('wt-lang','en')}catch(e){};applyLang()};
 $('lTR').onclick=()=>{lang='tr';try{localStorage.setItem('wt-lang','tr')}catch(e){};applyLang()};
@@ -63,7 +65,7 @@ $('thD').onclick=()=>setTheme('dark'); $('thL').onclick=()=>setTheme('light');
 matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{ if(!document.documentElement.hasAttribute('data-theme')) setTheme(null); });
 
 // ---------- state ----------
-const S={k:16,Bi:3,loss:1,pubAt:3000,beta:3,cut:new Set(),dark:new Set(),view:'m',t:0,playing:true,speed:0.25,sel:null};
+const S={k:4,Bi:3,loss:0.5,pubAt:3000,beta:3,cut:new Set(),dark:new Set(),view:'m',t:0,playing:true,speed:0.25,sel:null};
 const net=buildNet(CITIES,{N:160,seed:7});
 const NODES=net.nodes, N=NODES.length;
 const PUB=NODES.findIndex(n=>n.c.n==='Ashburn'&&n.bw>10000);
@@ -94,9 +96,10 @@ drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(f&&f.type.s
 let msgT; $('msg').oninput=e=>{clearTimeout(msgT);msgT=setTimeout(()=>drawDefault(e.target.value.trim()||null),250)};
 function drawStripes(){const k=S.k, el=$('stripes'); el.style.gridTemplateColumns='repeat('+Math.min(k,16)+',1fr)'; el.innerHTML='';
   for(let i=0;i<k;i++){const d=document.createElement('div');const o=(i*(BYTES/k))+((64/k|0)*128+64)*3;d.style.background='rgb('+SRC[o]+','+SRC[o+1]+','+SRC[o+2]+')';el.appendChild(d)}
-  $('fragNote').textContent=L(`${k} fragments of ${(BYTES/k).toLocaleString()} bytes each. A node needs any ${k} independent coded shards to rebuild the image.`,`Her biri ${(BYTES/k).toLocaleString('tr')} bayt olan ${k} parça. Bir düğüm resmi geri kurmak için herhangi ${k} bağımsız kodlu sharda ihtiyaç duyar.`);}
+  $('fragNote').textContent=L(`This picture rides along as the block's content. It is cut into ${k} pieces, and every node must collect ${k} independent coded shards to rebuild it.`,`Bu resim bloğun içeriği olarak yolculuk ediyor. ${k} parçaya bölünüyor ve her düğüm onu geri kurmak için ${k} bağımsız kodlu shard toplamak zorunda.`);}
 
 // ---------- controls ----------
+const SCEN_D={calm:['An ordinary day: 1 MB block, light packet loss.','Sıradan bir gün: 1 MB blok, hafif paket kaybı.'],red:['Every Europe to Asia link that rides the Red Sea is gone, like the Sep 2025 cuts near Jeddah.','Kızıldeniz\'den geçen tüm Avrupa Asya bağlantıları gitti, Eylül 2025\'teki Cidde kesintileri gibi.'],baltic:['Finland and Sweden lose their direct links to Central Europe, like the C-Lion1 cut in Nov 2024.','Finlandiya ve İsveç Orta Avrupa\'ya doğrudan bağlantılarını kaybediyor, Kasım 2024\'teki C-Lion1 kesintisi gibi.'],islands:['Both oceans cut: the Americas only reach the rest of the world through Latin America.','İki okyanus da kesik: Amerika dünyanın geri kalanına yalnızca Latin Amerika üzerinden ulaşıyor.'],dc:['A thought experiment: two big hosting regions go dark at once.','Bir düşünce deneyi: iki büyük barındırma bölgesi aynı anda kararıyor.'],storm:['5% of packets are lost on every link. Both sides must retransmit.','Her bağlantıda paketlerin %5\'i kayboluyor. İki taraf da yeniden göndermek zorunda.'],blob:['A 4 MB block, roughly a blob heavy slot.','4 MB\'lık bir blok, kabaca blob yüklü bir slot.']};
 const SCEN=[
  {id:'calm',en:'Calm day',tr:'Sakin gün',set:{Bi:3,loss:0.5,cut:[],dark:[]}},
  {id:'red',en:'Red Sea cut',tr:'Kızıldeniz kesildi',set:{Bi:3,loss:1,cut:['RS'],dark:[]}},
@@ -107,10 +110,10 @@ const SCEN=[
  {id:'blob',en:'4 MB blob-heavy block',tr:'4 MB blob yüklü blok',set:{Bi:5,loss:1,cut:[],dark:[]}},
 ];
 function buildChips(){
-  const sc=$('scen'); sc.innerHTML='';
+  const sc=$('scen'); sc.innerHTML=''; $('scenNote').textContent=L('Custom settings. Pick a scenario to reset.','Özel ayarlar. Sıfırlamak için bir senaryo seç.');
   for(const s of SCEN){const b=document.createElement('button');b.className='chip scen';b.textContent=L(s.en,s.tr);
     const m=s.set; const match=S.Bi===m.Bi&&S.loss===m.loss&&S.cut.size===m.cut.length&&m.cut.every(c=>S.cut.has(c))&&S.dark.size===m.dark.length&&m.dark.every(c=>S.dark.has(cityIdx(c)));
-    b.setAttribute('aria-pressed',match);
+    b.setAttribute('aria-pressed',match); if(match) $('scenNote').textContent=L(...SCEN_D[s.id]);
     b.onclick=()=>{try{history.replaceState(null,'','#'+s.id)}catch(e){location.hash=s.id};S.Bi=m.Bi;S.loss=m.loss;S.cut=new Set(m.cut);S.dark=new Set(m.dark.map(cityIdx));$('B').value=S.Bi;$('loss').value=S.loss;rerun()}; sc.appendChild(b)}
   const cu=$('cuts'); cu.innerHTML='';
   for(const id in CORRIDORS){const b=document.createElement('button');b.className='chip';b.textContent='✂ '+CORRIDORS[id][lang];b.setAttribute('aria-pressed',S.cut.has(id));
@@ -163,12 +166,12 @@ function buildMask(){const c=document.createElement('canvas');c.width=GW;c.heigh
   const d=x.getImageData(0,0,GW,GH).data; landMask=new Uint8Array(GW*GH); for(let i=0;i<GW*GH;i++) landMask[i]=d[i*4+3]>60?1:0;}
 function heatGrid(T,alive){
   if(!landMask) buildMask();
-  const g=new Float32Array(GW*GH).fill(NaN); const R2=70*70; if(!heatGrid.A) heatGrid.A=new Float32Array(GW*GH);
+  const g=new Float32Array(GW*GH).fill(NaN); const R2=42*42; if(!heatGrid.A) heatGrid.A=new Float32Array(GW*GH);
   const pts=NODES.filter((n,i)=>alive[i]).map(n=>[n.x,n.y,T[n.id]<Infinity?T[n.id]:20000]);
   for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){const i=gy*GW+gx; if(!landMask[i]) continue;
     const x=gx*CELL+2,y=gy*CELL+2; let sw=0,sv=0;
     let dmin=1e9; for(const p of pts){const dx=p[0]-x,dy=p[1]-y,d2=dx*dx+dy*dy; if(d2<dmin) dmin=d2; if(d2>R2) continue; const w=1/((d2+16)*(d2+16)); sw+=w; sv+=w*p[2];}
-    if(sw>0) g[i]=sv/sw; const dm=Math.sqrt(dmin); ALPHA[i]=dm<22?1:Math.max(0,1-(dm-22)/48); }
+    if(sw>0) g[i]=sv/sw; const dm=Math.sqrt(dmin); ALPHA[i]=dm<14?1:Math.max(0,1-(dm-14)/26); }
   return g;
 }
 
@@ -186,7 +189,7 @@ let lastHeatT=-1,lastHeatView='';
 function paintHeat(){
   if(!R) return; const t=S.t, v=S.view, bud=budget(); const d=heatImg.data; const gm=R.m.grid, gg=R.g.grid;
   const A=v==='g'?COL.g2_:COL.m2_, B=v==='g'?COL.gdeep_:COL.mdeep_, late=COL.late_, land=COL.land_;
-  for(let i=0;i<GW*GH;i++){ const o=i*4; let a=0,c=land; const al=0.1+0.9*ALPHA[i];
+  for(let i=0;i<GW*GH;i++){ const o=i*4; let a=0,c=land; const al=ALPHA[i];
     if(v==='d'){ const x=gm[i],y=gg[i]; if(!isNaN(x)&&Math.min(x,y)<=t){ const df=Math.min(y,2e4)-Math.min(x,2e4); const s=Math.max(-1,Math.min(1,df/400)); c=s>=0?mix(land,COL.m_,0.25+0.75*s):mix(land,COL.g_,0.25+0.75*-s); a=225; } }
     else { const val=(v==='g'?gg:gm)[i]; if(!isNaN(val)&&val<=t){ if(val>bud){c=late;a=200}else{c=mix(A,B,Math.pow(val/bud,0.8));a=230} } }
     d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=a*al; }
@@ -277,7 +280,11 @@ map.addEventListener('mousemove',e=>{const r=map.getBoundingClientRect(); const 
 // ---------- view + legend ----------
 function setView(v){S.view=v; $('vM').setAttribute('aria-pressed',v==='m'); $('vG').setAttribute('aria-pressed',v==='g'); $('vD').setAttribute('aria-pressed',v==='d'); legend(); dirtyHeat=true;}
 $('vM').onclick=()=>setView('m'); $('vG').onclick=()=>setView('g'); $('vD').onclick=()=>setView('d');
-function legend(){ const el=$('legend'); if(!COL.m) return; const v=S.view;
+const HOWTO={
+ m:['Each dot is a node. Its ring fills as coded shards arrive, and it turns solid once the node can rebuild the block. Shading shows when each area got the block; the dashed line marks the vote deadline.','Her nokta bir düğüm. Kodlu shardlar geldikçe halkası dolar, düğüm bloğu geri kurabildiğinde içi dolar. Gölgeleme her bölgenin bloğu ne zaman aldığını, kesikli çizgi oylama sınırını gösterir.'],
+ g:['Each dot is a node. A dotted ring means it is downloading the whole block; it cannot pass on a single byte until the dot turns solid.','Her nokta bir düğüm. Noktalı halka, düğümün bloğun tamamını indirdiğini gösterir; nokta dolana kadar tek bir baytını bile iletemez.'],
+ d:['Silver areas got the block first with mump2p, coral areas with Gossipsub. The stronger the colour, the bigger the gap (full at 400 ms).','Gümüş bölgeler bloğu mump2p ile, mercan bölgeler Gossipsub ile önce aldı. Renk ne kadar güçlüyse fark o kadar büyük (400 ms\'de tam).']};
+function legend(){ const el=$('legend'); if(!COL.m) return; const v=S.view; $('howto').textContent=L(...HOWTO[v]);
   if(v==='d') el.innerHTML=`<span>${L('mump2p first','önce mump2p')}</span><span class="ramp" style="background:linear-gradient(90deg,${COL.m},${COL.land},${COL.g})"></span><span>${L('Gossipsub first','önce Gossipsub')}</span>`;
   else { const a=v==='g'?COL.g2:COL.m2, b=v==='g'?COL.gdeep:COL.mdeep;
     el.innerHTML=`<span>0 ms</span><span class="ramp" style="background:linear-gradient(90deg,${a},${b})"></span><span>${L('deadline','sınır')} ┄</span><span class="ramp" style="width:18px;background:${COL.late}"></span><span>${L('late','geç')}</span>`; } }
@@ -318,9 +325,10 @@ function recorder(){ if(!R) return; const t=S.t;
 function writeVerdict(){ if(!R) return; const bud=budget(); const n=R.m.aliveN-1;
   const lm=n-countLE(R.m.fin,bud), lg=n-countLE(R.g.fin,bud); const mm=q(R.m.fin,.5), mg=q(R.g.fin,.5);
   const at=(S.pubAt/1000).toFixed(2).replace('.',lang==='tr'?',':'.');
+  const late=(x)=>x===0?L('none','hiçbiri'):x;
   $('verdict').innerHTML=L(
-   `Published ${at} s into the slot, the block has <b>${nf(bud)} ms</b> to reach validators before they attest. On Gossipsub <b>${lg}</b> of ${n} nodes miss that window; on mump2p <b>${lm}</b> do. Median arrival: <b>${nf(mg)} ms</b> vs <b>${nf(mm)} ms</b>.`,
-   `Slotun ${at}. saniyesinde yayınlanan bloğun, validator'lar oy vermeden önce onlara ulaşmak için <b>${nf(bud)} ms</b>'si var. Gossipsub'da ${n} düğümün <b>${lg}</b> tanesi bu pencereyi kaçırıyor, mump2p'de <b>${lm}</b> tanesi. Medyan varış: <b>${nf(mg)} ms</b>'ye karşı <b>${nf(mm)} ms</b>.`);
+   `With <b>${nf(bud)} ms</b> left before validators vote, <span class="g">${late(lg)}</span> of ${n} nodes miss the block on Gossipsub and <span class="m">${late(lm)}</span> miss it on mump2p. Half the network has it after <span class="g">${nf(mg)} ms</span> on Gossipsub versus <span class="m">${nf(mm)} ms</span> on mump2p.`,
+   `Validator'ların oy vermesine <b>${nf(bud)} ms</b> kala, ${n} düğümden Gossipsub'da <span class="g">${late(lg)}</span>, mump2p'de <span class="m">${late(lm)}</span> tanesi bloğu kaçırıyor. Ağın yarısı bloğa Gossipsub'da <span class="g">${nf(mg)} ms</span>, mump2p'de <span class="m">${nf(mm)} ms</span> sonra sahip oluyor.`);
 }
 
 // ---------- probe: real decoding of the payload at one node ----------
@@ -417,6 +425,71 @@ function sonify(t0,t1){ if(!sound||!AC||!R||t1<=t0) return; const res=S.view==='
   for(let i=0;i<N;i++){ const T=res.T[i]; if(T>t0&&T<=t1&&notes<8){ pluck(440*Math.pow(2,PENTA[(i*7)%PENTA.length]/12),0.04,1.2,'sine'); notes++; } }
 }
 
+
+// ---------- tips ----------
+const TIPS={
+ cut:['A corridor is a group of real undersea cable routes. Cutting one removes every peer link that would cross it, which is the worst case; real outages often reroute traffic slowly instead.','Koridor, gerçek denizaltı kablo güzergâhlarından oluşan bir grup. Birini kesmek, onu geçecek tüm eş bağlantılarını kaldırır; bu en kötü durumdur, gerçek kesintilerde trafik çoğu zaman yavaşça başka yoldan akar.'],
+ payload:['Your image is the block\'s actual content. Every coded shard you see is a real linear mix of its bytes over GF(2⁸), and the probe really solves those mixes back into the picture.','Resmin bloğun gerçek içeriği. Gördüğün her kodlu shard, baytlarının GF(2⁸) üzerinde gerçek bir doğrusal karışımı; sonda da bu karışımları gerçekten çözüp resme geri dönüştürüyor.'],
+ k:['How many pieces the block is cut into. Any k independent coded shards rebuild it. More, smaller shards let nodes start relaying sooner, but cost more CPU and header bytes, which this model does not charge for. 4 is the default in Optimum\'s dev setup; production values are not public.','Bloğun kaç parçaya bölündüğü. Herhangi k bağımsız kodlu shard onu geri kurar. Daha çok ve daha küçük shard, düğümlerin daha erken aktarmaya başlamasını sağlar ama daha fazla CPU ve başlık baytı ister; bu model o maliyeti hesaba katmıyor. 4, Optimum\'un geliştirici kurulumundaki varsayılan; üretim değerleri açık değil.'],
+ size:['Bytes on the wire. Post Dencun blocks with blobs commonly reach several hundred KB to a few MB.','Ağdaki bayt miktarı. Dencun sonrası bloblu bloklar genellikle birkaç yüz KB ile birkaç MB arasında.'],
+ loss:['Share of packets dropped on each link. Both protocols run over reliable transport, so every loss costs a retransmit round trip for both.','Her bağlantıda düşen paket oranı. İki protokol de güvenilir taşıma kullanır, yani her kayıp iki tarafa da bir yeniden gönderim turu kaybettirir.'],
+ pub:['Ethereum validators vote 4 s into each 12 s slot. A proposer that publishes late (timing games) leaves less time for the block to spread, which is when propagation speed decides the vote.','Ethereum validator\'ları her 12 sn\'lik slotun 4. saniyesinde oy verir. Geç yayınlayan bir proposer (timing games) bloğun yayılmasına daha az zaman bırakır; yayılım hızının oyu belirlediği an budur.'],
+ beta:['How many fresh mixes a relay pushes to each peer before waiting to be asked. Higher is faster but sends more spare shards. This rule is our modelling choice, not a published mump2p parameter.','Bir aktarıcının, istenmeden önce her eşe kaç taze karışım ittiği. Yüksek değer daha hızlı ama daha fazla fazlalık shard gönderir. Bu kural bizim modelleme tercihimiz, yayınlanmış bir mump2p parametresi değil.'],
+ probe:['Click any dot on the map to look inside that node. Left: what it holds on mump2p. Right: what it holds on Gossipsub.','Haritada herhangi bir noktaya tıklayarak o düğümün içine bak. Solda mump2p\'de, sağda Gossipsub\'da elinde ne olduğu.'],
+ rank:['How many of the received shards are truly new information. A random mix over GF(2⁸) is new with probability 255/256, so almost nothing is wasted. At rank k the block is fully recoverable.','Gelen shardların kaçının gerçekten yeni bilgi olduğu. GF(2⁸) üzerinde rastgele bir karışım 255/256 olasılıkla yenidir, yani neredeyse hiçbir şey boşa gitmez. Rank k olduğunda blok tamamen geri kurulabilir.'],
+ feed:['Each strip is the raw bytes of one coded shard: pure noise on its own. NEW_SHARD and UNHELPFUL_SHARD are the names Optimum\'s own tracing uses.','Her şerit, bir kodlu shardın ham baytları: tek başına saf gürültü. NEW_SHARD ve UNHELPFUL_SHARD, Optimum\'un kendi izleme sisteminin kullandığı adlar.'],
+};
+const pop=document.createElement('div'); pop.id='tipPop'; pop.hidden=true; pop.setAttribute('role','tooltip'); document.body.appendChild(pop);
+let tipOpen=null;
+document.addEventListener('click',e=>{ const b=e.target.closest('.tip');
+  if(b){ e.preventDefault(); e.stopPropagation(); if(tipOpen===b){closeTip();return} closeTip(); tipOpen=b; b.setAttribute('aria-expanded','true');
+    pop.textContent=L(...TIPS[b.dataset.tip]); pop.hidden=false; const r=b.getBoundingClientRect(); const w=Math.min(300,innerWidth-24);
+    pop.style.maxWidth=w+'px'; let x=Math.min(innerWidth-w-12,Math.max(12,r.left-20)); pop.style.left=x+'px';
+    const ph=pop.offsetHeight; pop.style.top=(r.bottom+8+ph>innerHeight?Math.max(8,r.top-ph-8):r.bottom+8)+'px'; return; }
+  if(!e.target.closest('#tipPop')) closeTip(); },true);
+function closeTip(){ if(tipOpen) tipOpen.setAttribute('aria-expanded','false'); tipOpen=null; pop.hidden=true; }
+addEventListener('scroll',closeTip,{passive:true}); addEventListener('keydown',e=>{if(e.key==='Escape'){closeTip(); if(!$('tour').hidden) endTour();}});
+
+// ---------- guided tour ----------
+function applyScen(id){ const m=SCEN.find(x=>x.id===id).set; S.Bi=m.Bi;S.loss=m.loss;S.cut=new Set(m.cut);S.dark=new Set(m.dark.map(cityIdx));$('B').value=S.Bi;$('loss').value=S.loss; syncLabels(); }
+function setK(k){ S.k=k; $('k').value=String(k); resetDec(); drawStripes(); syncLabels(); }
+const SYD=()=>NODES.findIndex(n=>n.c.n==='Sydney');
+const TOUR=[
+ {t:['One block, 159 nodes, 1 second','Bir blok, 159 düğüm, 1 saniye'],
+  b:['A proposer in Virginia (circled) publishes a block 3 s into the slot. Validators vote at 4 s, so every node has about one second to receive it. Nodes are placed where Ethereum infrastructure actually clusters.','Virginia\'daki bir proposer (halkalı nokta) bloğu slotun 3. saniyesinde yayınlıyor. Validator\'lar 4. saniyede oy veriyor, yani her düğümün bloğu almak için yaklaşık bir saniyesi var. Düğümler Ethereum altyapısının gerçekte yoğunlaştığı yerlere yerleştirildi.'],
+  spot:'#mapbox', run(){ setK(4); applyScen('calm'); setView('g'); rerun(); S.speed=0.25; $('speed').value='0.25'; }},
+ {t:['Gossipsub: wait for all of it, then pass it on','Gossipsub: hepsini bekle, sonra ilet'],
+  b:['Watch the dotted coral rings. Each node downloads the entire block before it can forward one byte, and every hop pays that full transfer time again. Far away nodes inherit all the waiting.','Noktalı mercan halkalara bak. Her düğüm tek bir bayt iletebilmek için önce bloğun tamamını indiriyor ve her atlama bu aktarım süresini baştan ödüyor. Uzaktaki düğümler tüm bu bekleyişi miras alıyor.'],
+  spot:'#mapbox', run(){ setView('g'); S.t=0; S.playing=true; playIco(); }},
+ {t:['mump2p: start passing it on from the first shard','mump2p: ilk sharddan itibaren iletmeye başla'],
+  b:['Same block, same links. Now it travels as coded shards, and a node relays fresh mixes the moment it holds anything. Rings fill bit by bit and the whole map lights up sooner. Compare the two rows of ticks under the map.','Aynı blok, aynı bağlantılar. Şimdi kodlu shardlar hâlinde yolculuk ediyor ve düğüm eline bir şey geçtiği an taze karışımlar aktarıyor. Halkalar azar azar doluyor ve tüm harita daha erken aydınlanıyor. Haritanın altındaki iki çentik sırasını karşılaştır.'],
+  spot:'#mapbox', run(){ setView('m'); S.t=0; S.playing=true; playIco(); }},
+ {t:['Inside Sydney: noise, noise, then the picture','Sydney\'nin içi: gürültü, gürültü, sonra resim'],
+  b:['The probe shows what Sydney holds. Each shard alone is noise. The moment the last independent one lands, the recipes on the left form a clean diagonal and the image appears in a single frame. That decoding is real, done on the picture\'s bytes.','Sonda Sydney\'nin elindekini gösteriyor. Her shard tek başına gürültü. Son bağımsız shard geldiği an soldaki tarifler temiz bir köşegene dönüşüyor ve resim tek karede beliriyor. Bu çözme gerçek, resmin baytları üzerinde yapılıyor.'],
+  spot:'#insp', run(){ setView('m'); S.sel=SYD(); resetDec(); const T=R.m.T[S.sel]; S.t=Math.max(0,T-90); S.speed=0.1; $('speed').value='0.1'; S.playing=true; playIco(); }},
+ {t:['Now cut the Red Sea','Şimdi Kızıldeniz\'i kes'],
+  b:['In Sep 2025 cables near Jeddah were cut. Here every Europe to Asia link through the Red Sea is gone. The map now shows who wins where: silver areas got the block first with mump2p, coral areas with Gossipsub. Read the sentence above the map.','Eylül 2025\'te Cidde açıklarında kablolar kesildi. Burada Kızıldeniz\'den geçen tüm Avrupa Asya bağlantıları gitti. Harita artık kimin nerede kazandığını gösteriyor: gümüş bölgeler bloğu mump2p ile, mercan bölgeler Gossipsub ile önce aldı. Haritanın üstündeki cümleyi oku.'],
+  spot:'#verdict', run(){ applyScen('red'); rerun(); setView('d'); S.speed=0.5; $('speed').value='0.5'; }},
+ {t:['Finer shards, faster spread','Daha ince shard, daha hızlı yayılım'],
+  b:['So far the block was cut into 4 shards, the default in Optimum\'s dev setup. Cut it into 16 and nodes can start relaying even sooner. It is not free: more shards mean more decoding work, which this model does not charge for. You can change this in Lab settings.','Şimdiye kadar blok, Optimum\'un geliştirici kurulumundaki varsayılan olan 4 sharda bölündü. 16\'ya böl, düğümler aktarmaya daha da erken başlasın. Bedava değil: daha çok shard daha çok çözme işi demek ve bu model o maliyeti hesaba katmıyor. Bunu Laboratuvar ayarlarından değiştirebilirsin.'],
+  spot:'#verdict', run(){ setK(16); rerun(); setView('d'); }},
+ {t:['Your turn','Sıra sende'],
+  b:['Drop your own image into "Your block", cut any cable on the map, black out a city from the probe, or press ♪ Listen: useful shards play notes, wasted copies thud.','"Senin bloğun" kısmına kendi resmini bırak, haritada istediğin kabloyu kes, sondadan bir şehri karart ya da ♪ Dinle\'ye bas: işe yarayan shardlar nota çalar, boşa giden kopyalar boğuk ses çıkarır.'],
+  spot:'.left', run(){ setView('m'); S.t=0; S.playing=true; playIco(); }},
+];
+let step=0;
+function showStep(i){ step=i; const st=TOUR[i]; document.querySelectorAll('.spot').forEach(e=>e.classList.remove('spot'));
+  st.run(); const sp=document.querySelector(st.spot); if(sp) sp.classList.add('spot');
+  $('tour').hidden=false; $('tourN').textContent=`${i+1} / ${TOUR.length}`; $('tourT').textContent=L(...st.t); $('tourB').textContent=L(...st.b);
+  $('tourPrev').disabled=i===0; $('tourPrev').style.opacity=i===0?0.4:1; $('tourNext').textContent=i===TOUR.length-1?L('Explore','Keşfet'):L('Next','İleri');
+  inspector(true); buildChips(); }
+function endTour(){ $('tour').hidden=true; document.querySelectorAll('.spot').forEach(e=>e.classList.remove('spot')); try{localStorage.setItem('wt-toured','1')}catch(e){} }
+$('tourBtn').onclick=()=>{ showStep(0); $('tour').scrollIntoView({behavior:'smooth',block:'start'}); };
+$('tourNext').onclick=()=>{ if(step>=TOUR.length-1) endTour(); else showStep(step+1); };
+$('tourPrev').onclick=()=>{ if(step>0) showStep(step-1); };
+$('tourX').onclick=endTour;
+function refreshTourText(){ if($('tour').hidden) return; const st=TOUR[step]; $('tourT').textContent=L(...st.t); $('tourB').textContent=L(...st.b); $('tourNext').textContent=step===TOUR.length-1?L('Explore','Keşfet'):L('Next','İleri'); }
+
 // ---------- loop ----------
 let last=performance.now();
 function loop(now){ const dt=Math.min(64,now-last); last=now;
@@ -429,4 +502,5 @@ document.fonts?.ready.then(()=>drawDefault()); drawDefault();
 setTheme(null); applyLang(); syncLabels();
 {const h=location.hash.slice(1); const sc=SCEN.find(x=>x.id===h); if(sc){const m=sc.set;S.Bi=m.Bi;S.loss=m.loss;S.cut=new Set(m.cut);S.dark=new Set(m.dark.map(cityIdx));$('B').value=S.Bi;$('loss').value=S.loss;syncLabels();}}
 rerun(); resize(); requestAnimationFrame(loop);
+{let seen=null; try{seen=localStorage.getItem('wt-toured')}catch(e){} if(!seen&&!location.hash) setTimeout(()=>showStep(0),400);}
 })();

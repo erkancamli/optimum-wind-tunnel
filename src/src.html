@@ -85,6 +85,7 @@ select{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;
 .timeline{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center}
 .play{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;display:grid;place-items:center}
 .play svg{width:14px;height:14px;fill:var(--fg)}
+.lab .mono,.lab .v{white-space:nowrap}
 .tread{font-family:var(--mono);font-size:13px;min-width:86px}
 @media (max-width:560px){.timeline{grid-template-columns:auto auto 1fr}.barcode{grid-column:1/-1;order:3}}
 .barcode{position:relative;height:60px}
@@ -129,6 +130,34 @@ select{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;
 footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
 :focus-visible{outline:2px solid var(--m);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.hero{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.herotext{min-width:0;flex:1 1 520px}
+.cta{background:var(--fg);color:var(--bg);border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:14px}
+.ghost{background:transparent;border:1px solid var(--line2);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600;color:var(--fg)}
+.tour{border:1px solid var(--fg);border-radius:12px;padding:10px 14px;background:var(--panel2);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:center}
+.tour h3{margin:0;font-size:16px;letter-spacing:-.01em;text-wrap:balance}
+.tour p{margin:0;color:var(--fg);opacity:.85;font-size:13.5px;line-height:1.45;grid-column:1/-1}
+.tourhead{display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--mute);min-width:0}
+.tourbtns{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.tourbtns .cta,.tourbtns .ghost{padding:7px 12px;font-size:13px}
+.x{background:none;border:0;color:var(--mute);cursor:pointer;font-size:12px;text-decoration:underline}
+.spot{outline:2px solid var(--fg);outline-offset:3px;border-radius:12px;transition:outline-color .3s}
+.verdict{font-size:clamp(15px,1.5vw,18px);line-height:1.45;margin:2px 2px 0;text-wrap:pretty}
+.verdict .m{color:var(--m);font-family:var(--mono);font-weight:600}
+.verdict .g{color:var(--g);font-family:var(--mono);font-weight:600}
+.howto{margin:0;font-size:12.5px;color:var(--mute)}
+.tip{width:17px;height:17px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);color:var(--mute);font-size:10px;font-weight:700;cursor:pointer;padding:0;margin-left:6px;line-height:15px;vertical-align:middle}
+.tip:hover,.tip[aria-expanded="true"]{color:var(--fg);border-color:var(--fg)}
+#tipPop{position:fixed;z-index:50;max-width:300px;background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:var(--fg);box-shadow:0 8px 30px rgba(0,0,0,.35);text-transform:none;letter-spacing:0;font-weight:400}
+details.lab summary{cursor:pointer;list-style:none;justify-content:space-between}
+details.lab summary::-webkit-details-marker{display:none}
+details.lab summary::after{content:"+";font-size:16px;color:var(--mute)}
+details.lab[open] summary::after{content:"−"}
+details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
+.ct .tip{margin-left:2px}
+.scenD{font-size:12px;color:var(--mute)}
+@media (max-width:560px){.tour{grid-template-columns:minmax(0,1fr)}.tourbtns{justify-content:flex-start;order:3}}
 </style>
 
 <div class="wrap">
@@ -145,15 +174,33 @@ footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;ju
   <div class="seg" role="group" aria-label="Theme"><button id="thD" aria-pressed="false" data-i="dark">Dark</button><button id="thL" aria-pressed="false" data-i="light">Light</button></div>
 </header>
 
-<section>
-  <p class="lede" data-i="lede" data-html="1">Same Earth. Same cables. Same block. <em>Two ways to move it.</em></p>
-  <p class="sub" data-i="sub">Your own file is split into fragments and coded with real Galois-field arithmetic, then sent across a network laid over real cities, fibre distances and undersea cable routes. Cut the cables, black out a data centre, and watch where the block gets in before the attestation deadline.</p>
+<section class="hero">
+  <div class="herotext">
+    <p class="lede" data-i="lede" data-html="1">Same Earth. Same cables. Same block. <em>Two ways to move it.</em></p>
+    <p class="sub" data-i="sub">A block leaves Virginia and 159 nodes around the world race to get it before validators vote. Watch libp2p Gossipsub and Optimum's mump2p carry it over the same network, then break that network and see who still arrives in time.</p>
+  </div>
+  <div class="herocta">
+    <button class="cta" id="tourBtn" data-i="tourBtn">▶ Take the 60 second tour</button>
+  </div>
 </section>
 
 <div class="grid">
   <aside class="left">
     <div class="card">
-      <div class="ct"><b>1</b> <span data-i="c1">Your block</span></div>
+      <div class="ct"><span data-i="c2">Try a scenario</span></div>
+      <div class="chips" id="scen"></div>
+      <div class="note" id="scenNote"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><span data-i="c3">Sabotage</span><button class="tip" data-tip="cut" aria-label="?">?</button></div>
+      <div class="chips" id="cuts"></div>
+      <div class="note" data-i="darkN">To black out a city, click one of its nodes on the map, then use the button under the probe.</div>
+      <div class="chips" id="darkList"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><span data-i="c1">Your block</span><button class="tip" data-tip="payload" aria-label="?">?</button></div>
       <div class="payload">
         <canvas id="srcCv" width="128" height="128" aria-label="payload preview"></canvas>
         <div class="drop" id="drop">
@@ -163,50 +210,46 @@ footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;ju
           <input type="text" id="msg" maxlength="40" placeholder="…or type a message" aria-label="message">
         </div>
       </div>
-      <label class="f"><span class="lab"><span data-i="kL">Fragments k (generation size)</span><span class="v" id="kV">16</span></span>
-        <select id="k"><option value="4">4 (mump2p dev default)</option><option value="8">8</option><option value="16" selected>16</option><option value="32">32</option></select></label>
       <div class="stripes" id="stripes"></div>
       <div class="note" id="fragNote"></div>
     </div>
 
-    <div class="card">
-      <div class="ct"><b>2</b> <span data-i="c2">Conditions</span></div>
-      <div class="chips" id="scen"></div>
-      <label class="f"><span class="lab"><span data-i="bL">Block size on the wire</span><span class="v" id="bV"></span></span>
+    <details class="card lab" id="labBox">
+      <summary class="ct"><span data-i="labT">Lab settings</span><span class="note" data-i="labS">for the curious</span></summary>
+      <label class="f"><span class="lab"><span><span data-i="kL">Shards per block (k)</span><button class="tip" data-tip="k" aria-label="?" type="button">?</button></span><span class="v" id="kV">4</span></span>
+        <select id="k"><option value="4" selected>4 (mump2p dev default)</option><option value="8">8</option><option value="16">16</option><option value="32">32</option></select></label>
+      <label class="f"><span class="lab"><span><span data-i="bL">Block size</span><button class="tip" data-tip="size" aria-label="?" type="button">?</button></span><span class="v" id="bV"></span></span>
         <input type="range" id="B" min="0" max="5" step="1" value="3"></label>
-      <label class="f"><span class="lab"><span data-i="lL">Packet loss per link</span><span class="v" id="lV"></span></span>
+      <label class="f"><span class="lab"><span><span data-i="lL">Packet loss per link</span><button class="tip" data-tip="loss" aria-label="?" type="button">?</button></span><span class="v" id="lV"></span></span>
         <input type="range" id="loss" min="0" max="8" step="0.5" value="1"></label>
-      <label class="f"><span class="lab"><span data-i="pL">Block published at</span><span class="v" id="pV"></span></span>
+      <label class="f"><span class="lab"><span><span data-i="pL">Block published at</span><button class="tip" data-tip="pub" aria-label="?" type="button">?</button></span><span class="v" id="pV"></span></span>
         <input type="range" id="pubAt" min="1000" max="3500" step="250" value="3000"></label>
-      <label class="f"><span class="lab"><span data-i="betaL">Shard budget per peer (β)</span><span class="v" id="betaV"></span></span>
+      <label class="f"><span class="lab"><span><span data-i="betaL">Shard budget per peer (β)</span><button class="tip" data-tip="beta" aria-label="?" type="button">?</button></span><span class="v" id="betaV"></span></span>
         <input type="range" id="beta" min="1.5" max="6" step="0.5" value="3"></label>
-      <div class="note" data-i="betaN">β trades bandwidth for speed: each relay offers a peer at most β·k/D fresh combinations before it waits to be asked.</div>
-    </div>
-
-    <div class="card">
-      <div class="ct"><b>3</b> <span data-i="c3">Sabotage</span></div>
-      <div class="note" data-i="cutN">Cut a cable corridor here or on the map. Every peer link that rides it goes dark.</div>
-      <div class="chips" id="cuts"></div>
-      <div class="note" data-i="darkN">To black out a city, click one of its nodes and use the button in the probe.</div>
-      <div class="chips" id="darkList"></div>
-    </div>
+    </details>
   </aside>
 
   <main class="stage">
+    <div class="tour" id="tour" hidden>
+      <div class="tourhead"><span class="mono" id="tourN"></span><h3 id="tourT"></h3></div>
+      <div class="tourbtns"><button class="x" id="tourX" data-i="close">Close</button><button class="ghost" id="tourPrev" data-i="back">Back</button><button class="cta" id="tourNext" data-i="next">Next</button></div>
+      <p id="tourB"></p>
+    </div>
+    <p class="verdict" id="verdict"></p>
     <div class="stagebar">
       <div class="seg" role="group" aria-label="View">
         <button id="vM" aria-pressed="true">mump2p</button><button id="vG" aria-pressed="false">Gossipsub</button><button id="vD" aria-pressed="false" data-i="vD">Who wins where</button>
       </div>
       <div class="legend" id="legend"></div>
     </div>
-    <div class="mapbox" id="mapbox"><canvas id="map"></canvas><div class="hint" data-i="hint">Click a node to probe it · click a ✂ badge to cut a corridor</div></div>
+    <p class="howto" id="howto"></p>
+    <div class="mapbox" id="mapbox"><canvas id="map"></canvas><div class="hint" data-i="hint">Click any dot to probe that node · click ✂ to cut a cable corridor</div></div>
     <div class="timeline">
       <button class="play" id="play" aria-label="Play or pause"><svg viewBox="0 0 10 10" id="playIco"><path d="M2 1h2v8H2zM6 1h2v8H6z"/></svg></button>
       <select id="speed" aria-label="Playback speed"><option value="0.1">0.1×</option><option value="0.25" selected>0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select>
       <div class="barcode" id="barcode"><canvas id="bc"></canvas></div>
       <div class="tread" id="tread">0 ms</div>
     </div>
-    <p class="verdict" id="verdict"></p>
     <div class="recorder">
       <div class="proto"><h3><span class="dot" style="background:var(--m)"></span><span lang="en">mump2p</span> <span class="note" data-i="rlnc">RLNC shards</span></h3><div class="kv" id="kvM"></div></div>
       <div class="proto"><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span> <span class="note" data-i="full">full block</span></h3><div class="kv" id="kvG"></div></div>
@@ -214,7 +257,7 @@ footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;ju
   </main>
 
   <aside class="card insp" id="insp">
-    <div class="ct" data-i="probe">Probe</div>
+    <div class="ct"><span data-i="probe">Probe: inside one node</span><button class="tip" data-tip="probe" aria-label="?">?</button></div>
     <div><h2 id="iName">-</h2><div class="meta" id="iMeta"></div></div>
     <div class="holds">
       <figure><canvas id="hM" width="128" height="128"></canvas><figcaption><span>mump2p</span><span class="mono" id="hMt"></span></figcaption></figure>
@@ -224,12 +267,12 @@ footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;ju
     <div class="split">
       <canvas class="matrix" id="mx" width="32" height="32" aria-label="coefficient matrix"></canvas>
       <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
-        <div class="lab" style="font-size:12px"><span class="note" data-i="rankL">Rank</span><span class="mono" id="rankV"></span></div>
+        <div class="lab" style="font-size:12px"><span class="note"><span data-i="rankL">Independent shards (rank)</span><button class="tip" data-tip="rank" aria-label="?">?</button></span><span class="mono" id="rankV"></span></div>
         <div class="rank" id="rank"></div>
-        <div class="note" data-i="mxN">Left: the coefficient matrix this node holds, reduced to echelon form over GF(2⁸). A diagonal of single bright pixels means every fragment is solved.</div>
+        <div class="note" data-i="mxN">Left: the mixing recipes this node holds, solved as far as possible. When they form a clean diagonal, every piece of the block is recovered.</div>
       </div>
     </div>
-    <div class="ct" data-i="feedT">Shards arriving here</div>
+    <div class="ct"><span data-i="feedT">Shards arriving here</span><button class="tip" data-tip="feed" aria-label="?">?</button></div>
     <div class="feed" id="feed"></div>
     <button class="danger" id="darkBtn"></button>
   </aside>

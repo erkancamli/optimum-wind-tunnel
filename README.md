@@ -8,6 +8,7 @@ An interactive simulation that runs Optimum's **mump2p** (RLNC coded gossip) and
 
 ## What makes it different
 
+* **A 60 second guided tour** walks first time visitors through the story: one block, Gossipsub waiting for the whole thing, mump2p relaying from the first shard, the probe decoding inside Sydney, a Red Sea cable cut, and finer shards. Every technical term has a `?` explanation.
 * **Your own file is really coded.** Drop an image or type a message. It is split into *k* fragments and every shard carries a random coefficient vector over GF(2⁸). Relays recode without decoding. The probe runs Gaussian elimination on the actual bytes, and the decoded image matches the source pixel for pixel.
 * **Probe any node.** Watch its coefficient matrix fill in echelon form, see shards arrive with Optimum's own trace names (`NEW_SHARD`, `UNHELPFUL_SHARD`), and see the image stay noise until the *k*th independent shard, then resolve at once. The Gossipsub side shows the store and forward wait for the whole block.
 * **Real geography.** 160 nodes in 38 hosting hubs, latency from great circle distance at fibre speed, bandwidth split 20% at 1 Gbps / 80% at 50 Mbps as in the OptimumP2P paper's Ethshadow runs.
@@ -16,6 +17,9 @@ An interactive simulation that runs Optimum's **mump2p** (RLNC coded gossip) and
 * **Listen.** Every useful arrival plays a note pitched by longitude, every wasted copy a dull thud.
 
 ## Fairness
+
+Defaults follow Optimum's published dev setup (k = 4 shards). Raising k widens the gap; the extra CPU and header cost of more shards is not modelled, and the page says so.
+
 
 Both protocols get the same peers, links, loss and reliable transport (a lost packet costs a retransmit for both). Coding helps because a node never waits for one particular shard.
 
