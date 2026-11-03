@@ -11,7 +11,7 @@
   --fg:#e9edf1; --mute:#8d9ca9; --faint:#5b6670;
   --land:#23282e; --ocean:#14171a;
   --m:#e9edf1; --m2:#ffffff; --mdeep:#5d6872;      /* mump2p: Optimum silver */
-  --g:#ff7a59; --g2:#ffc2ad; --gdeep:#8c2f1a;      /* gossipsub: coral */
+  --g:#f2c94c; --g2:#fff3c4; --gdeep:#7d6514;      /* gossipsub: signal yellow */
   --late:#5a2733; --dead:#ff4d6d; --ok:#4fd1a5;
   --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -19,11 +19,11 @@
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;
   --bg:#eef0f2; --panel:#ffffff; --panel2:#f5f6f8; --line:#dde1e6; --line2:#c9cfd6;
   --fg:#16181a; --mute:#5b6670; --faint:#8d9ca9; --land:#d9dee3; --ocean:#f4f6f8;
-  --m:#16181a; --m2:#16181a; --mdeep:#8d9ca9; --g:#e0532f; --g2:#ffb39d; --gdeep:#8c2f1a; --late:#c79aa3; --dead:#d61f45; --ok:#0f9b72;}}
+  --m:#16181a; --m2:#16181a; --mdeep:#8d9ca9; --g:#a87b00; --g2:#ffe59a; --gdeep:#6b5200; --late:#c79aa3; --dead:#d61f45; --ok:#0f9b72;}}
 :root[data-theme="light"]{color-scheme:light;
   --bg:#eef0f2; --panel:#ffffff; --panel2:#f5f6f8; --line:#dde1e6; --line2:#c9cfd6;
   --fg:#16181a; --mute:#5b6670; --faint:#8d9ca9; --land:#d9dee3; --ocean:#f4f6f8;
-  --m:#16181a; --m2:#16181a; --mdeep:#8d9ca9; --g:#e0532f; --g2:#ffb39d; --gdeep:#8c2f1a; --late:#c79aa3; --dead:#d61f45; --ok:#0f9b72;}
+  --m:#16181a; --m2:#16181a; --mdeep:#8d9ca9; --g:#a87b00; --g2:#ffe59a; --gdeep:#6b5200; --late:#c79aa3; --dead:#d61f45; --ok:#0f9b72;}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
 body{font-family:var(--sans);font-size:14px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
@@ -45,6 +45,8 @@ header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .iconbtn[aria-pressed="true"]{border-color:var(--m);color:var(--m)}
 .lede{font-size:clamp(20px,2.4vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:4px 0 0;text-wrap:balance;max-width:28ch}
 .lede em{font-style:normal;color:var(--mute)}
+.lede .hl{color:var(--dead);white-space:nowrap}
+@media (max-width:420px){.lede .hl{white-space:normal}}
 .sub{color:var(--mute);max-width:78ch;margin:6px 0 0}
 .grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -188,7 +190,8 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
 .speed{position:absolute;top:8px;right:8px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:3px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line2);backdrop-filter:blur(6px);box-shadow:0 8px 28px rgba(0,0,0,.35);animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
 .speed b{font-family:var(--sans);font-size:clamp(20px,2.2vw,30px);font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--m)}
 .speed b.slow{color:var(--g)}
-.speed span{font-size:11px;color:var(--mute);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.speed span{font-size:11px;color:var(--mute);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.35}
+.speed i{font-style:normal}.speed i.g{color:var(--g)}.speed i.m{color:var(--m)}.speed .sp2{color:var(--faint)}
 @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.speed{animation:none}}
 .legendrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
@@ -211,9 +214,9 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
 
 <section class="hero">
   <div class="herotext">
-    <p class="eyebrow" data-i="eyebrow">mump2p vs Gossipsub · interactive simulation</p>
-    <p class="lede" data-i="lede" data-html="1">Same Earth. Same cables. Same block. <em>Two ways to move it.</em></p>
-    <p class="sub" data-i="sub">A block leaves Virginia and 159 nodes around the world race to get it before validators vote. Watch libp2p Gossipsub and Optimum's mump2p carry it over the same network, then break that network and see who still arrives in time.</p>
+    <p class="eyebrow" data-i="eyebrow" data-html="1"><span lang="en">Optimum Wind Tunnel</span> · a stress test for block propagation</p>
+    <p class="lede" data-i="lede" data-html="1">What happens to a block when the <span class="hl">Red Sea goes dark?</span></p>
+    <p class="sub" data-i="sub">Ethereum validators vote four seconds into every slot. Cut a real undersea cable, black out a data centre, and count how many of them miss the block on today's Gossipsub and on Optimum's mump2p. Every shard here is really coded, and every node really decodes.</p>
   </div>
   <div class="herocta">
     <button class="cta big" id="tourBtn" data-i="tourBtn">▶ Take the 60 second tour</button>
@@ -236,13 +239,13 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
     </div>
     <div class="twin" id="twin">
       <section class="pane" id="paneG">
-        <div class="phead"><div><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span></h3><p class="psub" data-i="gsub">Today's Ethereum. Waits for the whole block at every hop.</p></div>
+        <div class="phead"><div><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span></h3><p class="psub" data-i="gsub">What Ethereum runs today. A node relays nothing until it holds every byte.</p></div>
           <div class="pcount"><b class="mono" id="cntG">0</b><span id="cntGl"></span></div></div>
         <div class="mapbox"><canvas id="mapG"></canvas></div>
         <div class="pbar"><i id="barG"></i></div>
       </section>
       <section class="pane" id="paneM">
-        <div class="phead"><div><h3><span class="dot" style="background:var(--m)"></span><span lang="en" id="mTitle">mump2p</span></h3><p class="psub" id="msub" data-i="msub">Optimum. Codes the block and relays from the first shard.</p></div>
+        <div class="phead"><div><h3><span class="dot" style="background:var(--m)"></span><span lang="en" id="mTitle">mump2p</span></h3><p class="psub" id="msub" data-i="msub">Optimum's coded gossip. Nodes pass on fresh mixes before they have decoded.</p></div>
           <div class="pcount"><b class="mono" id="cntM">0</b><span id="cntMl"></span></div></div>
         <div class="mapbox"><canvas id="mapM"></canvas><div class="speed" id="speedBadge" hidden><b class="mono" id="spX"></b><span id="spL"></span></div><div class="hint" data-i="hint">Click any dot to probe that node · click ✂ to cut a cable corridor</div></div>
         <div class="pbar"><i id="barM"></i></div>

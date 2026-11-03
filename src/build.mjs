@@ -13,7 +13,7 @@ const head=`<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="mump2p (RLNC) vs Gossipsub on a real-world map. Your own file is coded with real GF(2^8) arithmetic. Cut undersea cables, black out data centres, watch the attestation deadline.">
 <meta property="og:title" content="Optimum Wind Tunnel">
-<meta property="og:description" content="Same Earth. Same cables. Same block. Two ways to move it.">
+<meta property="og:description" content="What happens to a block when the Red Sea goes dark? Cut real cables and count missed votes on Gossipsub vs Optimum mump2p.">
 <meta property="og:image" content="https://optimum-wind-tunnel.netlify.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>html{color-scheme:dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>

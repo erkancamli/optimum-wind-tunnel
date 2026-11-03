@@ -1,6 +1,6 @@
 # Optimum Wind Tunnel
 
-**Same Earth. Same cables. Same block. Two ways to move it.**
+**What happens to a block when the Red Sea goes dark?**
 
 An interactive simulation that runs Optimum's **mump2p** (RLNC coded gossip) and libp2p **Gossipsub** over the same network laid on real cities, fibre distances and undersea cable corridors.
 
@@ -15,7 +15,7 @@ An interactive simulation that runs Optimum's **mump2p** (RLNC coded gossip) and
 * **Probe any node.** Watch its coefficient matrix fill in echelon form, see shards arrive with Optimum's own trace names (`NEW_SHARD`, `UNHELPFUL_SHARD`), and see the image stay noise until the *k*th independent shard, then resolve at once. The Gossipsub side shows the store and forward wait for the whole block.
 * **Real geography.** 160 nodes in 38 hosting hubs, latency from great circle distance at fibre speed, bandwidth split 20% at 1 Gbps / 80% at 50 Mbps as in the OptimumP2P paper's Ethshadow runs.
 * **Sabotage.** Cut eight real cable corridors (Red Sea, Baltic, Transatlantic…) or black out a city.
-* **Propagation isochrones instead of a race bar.** Arrival time is drawn like a weather map, with the 4 s attestation deadline as a contour, plus a "who wins where" difference map.
+* **Missed votes, not a race bar.** The headline result is how many nodes get the block after the 4 s attestation deadline. Arrival time is drawn like a weather map, with the deadline as a contour, plus a "who wins where" difference map.
 * **Listen in stereo.** Gossipsub plays in the left ear, mump2p in the right: useful arrivals are notes pitched by longitude, wasted copies a dull thud.
 
 ## Fairness
@@ -29,7 +29,7 @@ Both protocols get the same peers, links, loss and reliable transport (a lost pa
 
 ## Scenario links
 
-Append a scenario to the URL: `#calm`, `#red`, `#baltic`, `#islands`, `#dc`, `#storm`, `#blob`.
+Append a scenario to the URL: `#red`, `#baltic`, `#dc`, `#islands`, `#storm`, `#blob`, `#calm`.
 
 ## Build
 
