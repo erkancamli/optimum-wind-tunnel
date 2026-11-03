@@ -185,6 +185,12 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
 .legend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mute);flex-wrap:wrap}
 .ramp{display:inline-block}
 .col .recorder{grid-template-columns:minmax(0,1fr)}
+.speed{position:absolute;top:8px;right:8px;z-index:2;display:flex;flex-direction:column;align-items:flex-end;gap:3px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line2);backdrop-filter:blur(6px);box-shadow:0 8px 28px rgba(0,0,0,.35);animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+.speed b{font-family:var(--sans);font-size:clamp(20px,2.2vw,30px);font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--m)}
+.speed b.slow{color:var(--g)}
+.speed span{font-size:11px;color:var(--mute);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.speed{animation:none}}
 .legendrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .legendrow .howto{flex:1 1 320px}
 </style>
@@ -238,7 +244,7 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
       <section class="pane" id="paneM">
         <div class="phead"><div><h3><span class="dot" style="background:var(--m)"></span><span lang="en" id="mTitle">mump2p</span></h3><p class="psub" id="msub" data-i="msub">Optimum. Codes the block and relays from the first shard.</p></div>
           <div class="pcount"><b class="mono" id="cntM">0</b><span id="cntMl"></span></div></div>
-        <div class="mapbox"><canvas id="mapM"></canvas><div class="hint" data-i="hint">Click any dot to probe that node · click ✂ to cut a cable corridor</div></div>
+        <div class="mapbox"><canvas id="mapM"></canvas><div class="speed" id="speedBadge" hidden><b class="mono" id="spX"></b><span id="spL"></span></div><div class="hint" data-i="hint">Click any dot to probe that node · click ✂ to cut a cable corridor</div></div>
         <div class="pbar"><i id="barM"></i></div>
       </section>
     </div>

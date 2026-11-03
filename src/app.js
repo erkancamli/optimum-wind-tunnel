@@ -152,7 +152,7 @@ function rerun(){
   const P={B:SIZES[S.Bi],loss:S.loss/100,k:S.k,r:0,m:1.5,beta:S.beta,pub:PUB,cut:S.cut,dark:S.dark,seed:3,hb:700};
   const t0=performance.now();
   const m=post(simulate('m',net,P),'m'), g=post(simulate('g',net,P),'g');
-  R={m,g,ms:performance.now()-t0};
+  R={m,g,ms:performance.now()-t0,id:(R?R.id+1:1)};
   const mx=Math.max(m.fin.at(-1)||0, g.fin.at(-1)||0);
   R.tMax=Math.max(budget()+150, Math.ceil((mx+60)/50)*50);
   S.t=0; S.playing=true; playIco(); resetDec(); buildChips(); writeVerdict(); dirtyAll(); drawBarcode(); inspector(true);
@@ -291,7 +291,18 @@ const HOWTO={
 function legend(){ const el=$('legend'); if(!COL.m) return; const v=S.mode||'t'; $('howto').textContent=L(...HOWTO[v]);
   if(v==='d') el.innerHTML=`<span>${L('mump2p first','önce mump2p')}</span><span class="ramp" style="background:linear-gradient(90deg,${COL.m},${COL.land},${COL.g})"></span><span>${L('Gossipsub first','önce Gossipsub')}</span>`;
   else el.innerHTML=`<span>${L('early','erken')}</span><span class="ramp" style="width:60px;background:linear-gradient(90deg,${COL.g2},${COL.gdeep})"></span><span class="ramp" style="width:60px;background:linear-gradient(90deg,${COL.m2},${COL.mdeep})"></span><span>${L('deadline','sınır')} ┄</span><span class="ramp" style="width:18px;background:${COL.late}"></span><span>${L('late','geç')}</span>`; }
-function counters(){ if(!R) return; const t=S.t, bud=budget(), n=R.m.aliveN-1;
+function speedBadge(){ const el=$('speedBadge'); if(!R){el.hidden=true;return}
+  const pg=q(R.g.fin,.95), pm=q(R.m.fin,.95); const show=S.t>=Math.max(pg,pm)&&isFinite(pg)&&isFinite(pm);
+  if(!show){ el.hidden=true; return; }
+  if(el.hidden||el.dataset.k!==R.id+lang){ el.dataset.k=R.id+lang; const r=pg/pm, x=$('spX');
+    const fmt=v=>v.toFixed(v>=10?0:1).replace('.',lang==='tr'?',':'.');
+    if(r>=1.05){ x.className='mono'; x.textContent=L(`${fmt(r)}× faster`,`${fmt(r)}× daha hızlı`); }
+    else if(r<=0.95){ x.className='mono slow'; x.textContent=L(`${fmt(1/r)}× slower`,`${fmt(1/r)}× daha yavaş`); }
+    else { x.className='mono'; x.textContent=L('About even','Neredeyse eşit'); }
+    $('spL').textContent=L(`to 95% of nodes: ${nf(pm)} vs ${nf(pg)} ms`,`düğümlerin %95'ine: ${nf(pm)} / ${nf(pg)} ms`); $('speedBadge').title=L(`Time for mump2p to reach 95% of nodes (${nf(pm)} ms) compared with Gossipsub (${nf(pg)} ms)`,`mump2p'nin düğümlerin %95'ine ulaşma süresi (${nf(pm)} ms), Gossipsub ile karşılaştırma (${nf(pg)} ms)`);
+    el.hidden=false; }
+}
+function counters(){ if(!R) return; speedBadge(); const t=S.t, bud=budget(), n=R.m.aliveN-1;
   if(S.mode==='d'){ let first=0,seen=0; for(let i=0;i<N;i++){ if(i===PUB||!R.m.alive[i]) continue; const a=R.m.T[i],b=R.g.T[i]; if(Math.min(a,b)<=t){seen++; if(a<b) first++;} }
     $('cntM').textContent=`${first}/${seen}`; $('cntMl').textContent=L('got it first via mump2p','bloğu önce mump2p ile aldı'); $('barM').style.width=(seen?100*first/seen:0)+'%'; return; }
   for(const [res,c,l,bar,dl] of [[R.g,'cntG','cntGl','barG','dlG'],[R.m,'cntM','cntMl','barM','dlM']]){
@@ -507,7 +518,8 @@ function refreshTourText(){ if($('tour').hidden) return; const st=TOUR[step]; $(
 $('shareBtn').onclick=()=>{ if(!R) return; const n=R.m.aliveN-1, bud=budget();
   const lg=n-countLE(R.g.fin,bud), lm=n-countLE(R.m.fin,bud); const sc=SCEN.find(x=>{const m=x.set;return S.Bi===m.Bi&&S.loss===m.loss&&S.cut.size===m.cut.length&&m.cut.every(c=>S.cut.has(c))&&S.dark.size===m.dark.length});
   const name=sc?sc.en:'Custom run'; const url='https://optimum-wind-tunnel.netlify.app/'+(sc?'#'+sc.id:'');
-  const txt=`${name} in the Optimum Wind Tunnel: ${lg} of ${n} nodes miss the vote deadline on Gossipsub, ${lm} on @get_optimum mump2p.\n\nSame Earth. Same cables. Same block.`;
+  const r=q(R.g.fin,.95)/q(R.m.fin,.95); const sp=r>=1.05?` mump2p reached 95% of the network ${r.toFixed(1)}x faster.`:'';
+  const txt=`${name} in the Optimum Wind Tunnel: ${lg} of ${n} nodes miss the vote deadline on Gossipsub, ${lm} on @get_optimum mump2p.${sp}\n\nSame Earth. Same cables. Same block.`;
   const a=document.createElement('a'); a.href='https://x.com/intent/post?text='+encodeURIComponent(txt)+'&url='+encodeURIComponent(url); a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); };
 
 // ---------- loop ----------
