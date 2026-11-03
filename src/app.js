@@ -75,7 +75,7 @@ const srcCv=$('srcCv'), sctx=srcCv.getContext('2d',{willReadFrequently:true});
 let SRC=new Uint8Array(BYTES);
 const markPath=new Path2D(document.querySelector('.brand path').getAttribute('d'));
 function drawDefault(text){
-  const g=sctx.createLinearGradient(0,0,128,128); g.addColorStop(0,'#2a1250'); g.addColorStop(1,'#b87cff');
+  const g=sctx.createLinearGradient(0,0,128,128); g.addColorStop(0,'#16181a'); g.addColorStop(1,'#5d6872');
   sctx.fillStyle=g; sctx.fillRect(0,0,128,128);
   for(let i=0;i<9;i++){sctx.strokeStyle='rgba(255,255,255,'+(0.05+i*0.012)+')';sctx.beginPath();sctx.arc(64,128,20+i*12,Math.PI,0);sctx.stroke()}
   sctx.save(); sctx.translate(30,18); sctx.scale(1.85,1.85); sctx.fillStyle='#fff'; sctx.fill(markPath); sctx.restore();
@@ -367,7 +367,7 @@ function inspector(force){
   // matrix
   const mc=$('mx'); if(mc.width!==k){mc.width=k;mc.height=k} const mi=mxc.createImageData(k,k);
   for(let s=0;s<k;s++){ const r=DEC.piv.indexOf(s); for(let j=0;j<k;j++){const o=(s*k+j)*4; let c=[10,10,14];
-      if(r>=0){const v=DEC.rows[r].c[j]; if(j===s) c=COL.m2_; else if(v){const a=0.25+0.75*v/255; c=[COL.m_[0]*a,COL.m_[1]*a,COL.m_[2]*a];} else c=[24,22,30];}
+      if(r>=0){const v=DEC.rows[r].c[j]; if(j===s) c=[255,255,255]; else if(v){const a=60+170*v/255; c=[a,a*1.02,a*1.06];} else c=[26,29,33];}
       mi.data[o]=c[0];mi.data[o+1]=c[1];mi.data[o+2]=c[2];mi.data[o+3]=255;} }
   mxc.putImageData(mi,0,0);
   const re=$('rank'); if(re.children.length!==k){ re.style.gridTemplateColumns=`repeat(${k},1fr)`; re.innerHTML=''; for(let j=0;j<k;j++) re.appendChild(document.createElement('i')); }
