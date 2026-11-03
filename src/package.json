@@ -1,0 +1,14 @@
+{
+  "name": "optimum-wind-tunnel",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "map": "node mkmap.mjs && node cities.mjs",
+    "build": "node build.mjs --standalone"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  }
+}

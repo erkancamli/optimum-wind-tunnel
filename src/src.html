@@ -1,0 +1,273 @@
+<title>Optimum Wind Tunnel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument console. Controls left, the Earth as the test section centre, the probe (node inspector) right; flight recorder under the map. */
+:root{
+  color-scheme:dark;
+  --bg:#121417; --panel:#181b1f; --panel2:#1e2227; --line:#2a2f35; --line2:#363c44;
+  --fg:#e9edf1; --mute:#8d9ca9; --faint:#5b6670;
+  --land:#23282e; --ocean:#14171a;
+  --m:#b87cff; --m2:#d8b8ff; --mdeep:#5b2aa8;      /* mump2p: Optimum purple */
+  --g:#ff7a59; --g2:#ffc2ad; --gdeep:#8c2f1a;      /* gossipsub: coral */
+  --late:#6b5a55; --dead:#ff4d6d; --ok:#4fd1a5;
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;
+  --bg:#eef0f2; --panel:#ffffff; --panel2:#f5f6f8; --line:#dde1e6; --line2:#c9cfd6;
+  --fg:#16181a; --mute:#5b6670; --faint:#8d9ca9; --land:#d9dee3; --ocean:#f4f6f8;
+  --m:#8a3ffc; --m2:#c9a2ff; --mdeep:#4b1d94; --g:#e0532f; --g2:#ffb39d; --gdeep:#8c2f1a; --late:#a99a94; --dead:#d61f45; --ok:#0f9b72;}}
+:root[data-theme="light"]{color-scheme:light;
+  --bg:#eef0f2; --panel:#ffffff; --panel2:#f5f6f8; --line:#dde1e6; --line2:#c9cfd6;
+  --fg:#16181a; --mute:#5b6670; --faint:#8d9ca9; --land:#d9dee3; --ocean:#f4f6f8;
+  --m:#8a3ffc; --m2:#c9a2ff; --mdeep:#4b1d94; --g:#e0532f; --g2:#ffb39d; --gdeep:#8c2f1a; --late:#a99a94; --dead:#d61f45; --ok:#0f9b72;}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--sans);font-size:14px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+button,select,input{font:inherit;color:inherit}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{height:22px;width:auto}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin:0}
+.brand h1 span{color:var(--m)}
+.tag{font-size:11px;color:var(--mute);border:1px solid var(--line2);padding:2px 8px;border-radius:99px}
+.hspace{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:6px 10px;cursor:pointer;color:var(--mute);font-size:12px;font-weight:600;letter-spacing:.04em}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--fg)}
+.iconbtn{background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600}
+.iconbtn[aria-pressed="true"]{border-color:var(--m);color:var(--m)}
+.lede{font-size:clamp(20px,2.4vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:4px 0 0;text-wrap:balance;max-width:28ch}
+.lede em{font-style:normal;color:var(--m)}
+.sub{color:var(--mute);max-width:78ch;margin:6px 0 0}
+.grid{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media (max-width:1180px){.grid{grid-template-columns:minmax(0,1fr) 330px}.left{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}}
+@media (max-width:1180px){.stage{order:0}.insp{order:1}.left{order:2}}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.left{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ct{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);display:flex;align-items:center;gap:8px}
+.ct b{color:var(--fg);font-weight:700}
+.row{display:flex;align-items:center;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
+label.f .v{color:var(--fg);font-family:var(--mono)}
+.lab{display:flex;justify-content:space-between;gap:8px}
+input[type=range]{width:100%;accent-color:var(--m)}
+select{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:6px 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--panel2);border:1px solid var(--line2);border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--fg)}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--dead) 18%,transparent);border-color:var(--dead);color:var(--fg);text-decoration:line-through;text-decoration-color:var(--dead)}
+.chip.scen[aria-pressed="true"]{text-decoration:none;background:color-mix(in srgb,var(--m) 18%,transparent);border-color:var(--m)}
+.payload{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:start}
+.payload canvas{width:96px;height:96px;border-radius:8px;image-rendering:pixelated;background:var(--panel2);border:1px solid var(--line2)}
+.drop{border:1px dashed var(--line2);border-radius:8px;padding:8px;font-size:12px;color:var(--mute);display:flex;flex-direction:column;gap:6px}
+.drop.over{border-color:var(--m);color:var(--fg)}
+.drop input[type=text]{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:5px 7px;width:100%;font-size:12px}
+.filebtn{font-size:12px;cursor:pointer;color:var(--m);text-decoration:underline;background:none;border:0;padding:0;text-align:left}
+.stripes{display:grid;gap:2px}
+.stripes div{height:4px;border-radius:2px;background:var(--line2)}
+.note{font-size:12px;color:var(--mute)}
+.note a{color:var(--m)}
+/* map */
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stagebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stagebar .legend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mute)}
+.ramp{width:120px;height:8px;border-radius:4px}
+.mapbox{position:relative;width:100%;aspect-ratio:1000/520;max-width:100%;border-radius:8px;overflow:hidden;background:var(--ocean)}
+.mapbox canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.hint{position:absolute;left:10px;bottom:8px;font-size:11px;color:var(--mute);pointer-events:none;background:color-mix(in srgb,var(--ocean) 80%,transparent);padding:2px 6px;border-radius:5px}
+.timeline{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center}
+.play{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;display:grid;place-items:center}
+.play svg{width:14px;height:14px;fill:var(--fg)}
+.tread{font-family:var(--mono);font-size:13px;min-width:86px}
+@media (max-width:560px){.timeline{grid-template-columns:auto auto 1fr}.barcode{grid-column:1/-1;order:3}}
+.barcode{position:relative;height:60px}
+.barcode canvas{position:absolute;inset:0;width:100%;height:100%;cursor:ew-resize}
+.recorder{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.recorder{grid-template-columns:minmax(0,1fr)}}
+.proto{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.proto h3{margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:12px}
+.kv span:nth-child(odd){color:var(--mute)}
+.kv span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.verdict{font-size:14px;line-height:1.45;text-wrap:pretty}
+.verdict b{font-family:var(--mono)}
+/* inspector */
+.insp h2{margin:0;font-size:18px;letter-spacing:-.01em}
+.insp .meta{font-size:12px;color:var(--mute)}
+.holds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.holds figure{margin:0;display:flex;flex-direction:column;gap:5px}
+.holds canvas{width:100%;aspect-ratio:1;border-radius:8px;image-rendering:pixelated;background:#000;border:1px solid var(--line2)}
+.holds figcaption{font-size:11px;color:var(--mute);display:flex;justify-content:space-between;gap:6px}
+.rank{display:grid;gap:2px}
+.rank i{display:block;height:8px;border-radius:2px;background:var(--line2)}
+.rank i.on{background:var(--m)}
+.matrix{width:112px;height:112px;image-rendering:pixelated;border-radius:6px;border:1px solid var(--line2);background:#000}
+.feed{display:flex;flex-direction:column;gap:4px;min-height:150px}
+.fe{display:grid;grid-template-columns:52px 1fr auto;gap:8px;align-items:center;font-size:11px}
+.fe canvas{width:52px;height:14px;border-radius:3px;image-rendering:pixelated}
+.fe .ev{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
+.fe .ev.new{color:var(--m)} .fe .ev.unh{color:var(--mute)} .fe .ev.unn{color:var(--faint)}
+.fe .t{font-family:var(--mono);color:var(--mute)}
+.split{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.danger{background:transparent;border:1px solid var(--dead);color:var(--dead);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600}
+/* lower */
+.lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:980px){.lower{grid-template-columns:minmax(0,1fr)}}
+.lower h4{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.lower p,.lower li{font-size:13px;color:var(--mute);margin:0}
+.lower ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.lower b{color:var(--fg);font-weight:600}
+.lower a{color:var(--m)}
+footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
+:focus-visible{outline:2px solid var(--m);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 37 35" aria-hidden="true"><path fill="currentColor" d="M26.5069 7.47463C24.3635 7.47463 22.3781 8.1536 20.7529 9.30953C19.2285 10.3935 17.1897 10.3421 15.6585 9.26869C13.9191 8.04968 11.7729 7.37362 9.46493 7.48625C4.37345 7.73493 0.249521 11.8778 0.0112662 16.9842C-0.257012 22.721 4.30081 27.4564 9.96172 27.4564C12.1051 27.4564 14.0915 26.7774 15.7157 25.6215C17.2392 24.5374 19.2788 24.5889 20.81 25.6623C22.5505 26.8813 24.6958 27.5574 27.0047 27.4447C32.0952 27.197 36.2191 23.0532 36.4584 17.9468C36.7266 12.21 32.1688 7.47463 26.5078 7.47463H26.5069ZM31.7156 17.7739C31.6429 19.3368 30.9872 20.8162 29.8696 21.9381C28.7519 23.061 27.2788 23.7205 25.7204 23.7973C25.6149 23.8021 25.5073 23.8051 25.4018 23.8051C24.1001 23.8051 22.8507 23.4116 21.7892 22.6676C20.7277 21.9245 19.49 21.5311 18.2077 21.5311C16.9253 21.5311 15.7379 21.9148 14.7162 22.6413C13.646 23.4019 12.384 23.8041 11.0668 23.8041C9.32256 23.8041 7.69834 23.1067 6.49257 21.84C5.28868 20.5743 4.67078 18.9114 4.75311 17.1561C4.82574 15.5932 5.48144 14.1138 6.59908 12.9919C7.71676 11.8691 9.18988 11.2095 10.7482 11.1337C10.8537 11.1288 10.9612 11.1259 11.0668 11.1259C12.3685 11.1259 13.6179 11.5194 14.6794 12.2634C15.7399 13.0065 16.9786 13.3999 18.261 13.3999C19.5239 13.3999 20.7306 13.0162 21.7524 12.2896C22.8226 11.5291 24.0846 11.1269 25.4018 11.1269C27.1461 11.1269 28.7712 11.8243 29.9761 13.091C31.1799 14.3567 31.7979 16.0196 31.7156 17.7749V17.7739Z"/></svg>
+    <h1 lang="en">Optimum <span>Wind Tunnel</span></h1>
+  </div>
+  <span class="tag" data-i="fan">fan-made · not an official Optimum product</span>
+  <div class="hspace"></div>
+  <button class="iconbtn" id="soundBtn" aria-pressed="false" data-i="sound">♪ Listen</button>
+  <div class="seg" role="group" aria-label="Language"><button id="lEN" aria-pressed="true">EN</button><button id="lTR" aria-pressed="false">TR</button></div>
+  <div class="seg" role="group" aria-label="Theme"><button id="thD" aria-pressed="false" data-i="dark">Dark</button><button id="thL" aria-pressed="false" data-i="light">Light</button></div>
+</header>
+
+<section>
+  <p class="lede" data-i="lede" data-html="1">Same Earth. Same cables. Same block. <em>Two ways to move it.</em></p>
+  <p class="sub" data-i="sub">Your own file is split into fragments and coded with real Galois-field arithmetic, then sent across a network laid over real cities, fibre distances and undersea cable routes. Cut the cables, black out a data centre, and watch where the block gets in before the attestation deadline.</p>
+</section>
+
+<div class="grid">
+  <aside class="left">
+    <div class="card">
+      <div class="ct"><b>1</b> <span data-i="c1">Your block</span></div>
+      <div class="payload">
+        <canvas id="srcCv" width="128" height="128" aria-label="payload preview"></canvas>
+        <div class="drop" id="drop">
+          <span data-i="drop">Drop an image here, or</span>
+          <button class="filebtn" id="pick" data-i="pick">choose a file</button>
+          <input type="file" id="file" accept="image/*" hidden>
+          <input type="text" id="msg" maxlength="40" placeholder="…or type a message" aria-label="message">
+        </div>
+      </div>
+      <label class="f"><span class="lab"><span data-i="kL">Fragments k (generation size)</span><span class="v" id="kV">16</span></span>
+        <select id="k"><option value="4">4 (mump2p dev default)</option><option value="8">8</option><option value="16" selected>16</option><option value="32">32</option></select></label>
+      <div class="stripes" id="stripes"></div>
+      <div class="note" id="fragNote"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><b>2</b> <span data-i="c2">Conditions</span></div>
+      <div class="chips" id="scen"></div>
+      <label class="f"><span class="lab"><span data-i="bL">Block size on the wire</span><span class="v" id="bV"></span></span>
+        <input type="range" id="B" min="0" max="5" step="1" value="3"></label>
+      <label class="f"><span class="lab"><span data-i="lL">Packet loss per link</span><span class="v" id="lV"></span></span>
+        <input type="range" id="loss" min="0" max="8" step="0.5" value="1"></label>
+      <label class="f"><span class="lab"><span data-i="pL">Block published at</span><span class="v" id="pV"></span></span>
+        <input type="range" id="pubAt" min="1000" max="3500" step="250" value="3000"></label>
+      <label class="f"><span class="lab"><span data-i="betaL">Shard budget per peer (β)</span><span class="v" id="betaV"></span></span>
+        <input type="range" id="beta" min="1.5" max="6" step="0.5" value="3"></label>
+      <div class="note" data-i="betaN">β trades bandwidth for speed: each relay offers a peer at most β·k/D fresh combinations before it waits to be asked.</div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><b>3</b> <span data-i="c3">Sabotage</span></div>
+      <div class="note" data-i="cutN">Cut a cable corridor here or on the map. Every peer link that rides it goes dark.</div>
+      <div class="chips" id="cuts"></div>
+      <div class="note" data-i="darkN">To black out a city, click one of its nodes and use the button in the probe.</div>
+      <div class="chips" id="darkList"></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stagebar">
+      <div class="seg" role="group" aria-label="View">
+        <button id="vM" aria-pressed="true">mump2p</button><button id="vG" aria-pressed="false">Gossipsub</button><button id="vD" aria-pressed="false" data-i="vD">Who wins where</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="mapbox" id="mapbox"><canvas id="map"></canvas><div class="hint" data-i="hint">Click a node to probe it · click a ✂ badge to cut a corridor</div></div>
+    <div class="timeline">
+      <button class="play" id="play" aria-label="Play or pause"><svg viewBox="0 0 10 10" id="playIco"><path d="M2 1h2v8H2zM6 1h2v8H6z"/></svg></button>
+      <select id="speed" aria-label="Playback speed"><option value="0.1">0.1×</option><option value="0.25" selected>0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select>
+      <div class="barcode" id="barcode"><canvas id="bc"></canvas></div>
+      <div class="tread" id="tread">0 ms</div>
+    </div>
+    <p class="verdict" id="verdict"></p>
+    <div class="recorder">
+      <div class="proto"><h3><span class="dot" style="background:var(--m)"></span><span lang="en">mump2p</span> <span class="note" data-i="rlnc">RLNC shards</span></h3><div class="kv" id="kvM"></div></div>
+      <div class="proto"><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span> <span class="note" data-i="full">full block</span></h3><div class="kv" id="kvG"></div></div>
+    </div>
+  </main>
+
+  <aside class="card insp" id="insp">
+    <div class="ct" data-i="probe">Probe</div>
+    <div><h2 id="iName">-</h2><div class="meta" id="iMeta"></div></div>
+    <div class="holds">
+      <figure><canvas id="hM" width="128" height="128"></canvas><figcaption><span>mump2p</span><span class="mono" id="hMt"></span></figcaption></figure>
+      <figure><canvas id="hG" width="128" height="128"></canvas><figcaption><span>Gossipsub</span><span class="mono" id="hGt"></span></figcaption></figure>
+    </div>
+    <div class="note" id="holdNote"></div>
+    <div class="split">
+      <canvas class="matrix" id="mx" width="32" height="32" aria-label="coefficient matrix"></canvas>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div class="lab" style="font-size:12px"><span class="note" data-i="rankL">Rank</span><span class="mono" id="rankV"></span></div>
+        <div class="rank" id="rank"></div>
+        <div class="note" data-i="mxN">Left: the coefficient matrix this node holds, reduced to echelon form over GF(2⁸). A diagonal of single bright pixels means every fragment is solved.</div>
+      </div>
+    </div>
+    <div class="ct" data-i="feedT">Shards arriving here</div>
+    <div class="feed" id="feed"></div>
+    <button class="danger" id="darkBtn"></button>
+  </aside>
+</div>
+
+<section class="lower">
+  <div class="card">
+    <h4 data-i="h1">What is real here</h4>
+    <ul>
+      <li data-i="r1" data-html="1"><b>The coding.</b> Every shard carries a random coefficient vector over GF(2⁸). Relays recode by mixing what they already hold, without decoding first. The probe runs Gaussian elimination on the actual bytes of your file.</li>
+      <li data-i="r2" data-html="1"><b>The geography.</b> Nodes sit in 38 hosting hubs weighted toward where Ethereum nodes cluster. Latency is great-circle distance × 1.5 at 200 km per ms of fibre.</li>
+      <li data-i="r3" data-html="1"><b>The bandwidth.</b> 20% of nodes at 1 Gbps and 80% at 50 Mbps, the same split the OptimumP2P paper used in its Ethshadow runs.</li>
+      <li data-i="r4" data-html="1"><b>Fairness.</b> Both protocols get the same peers, the same links, the same loss and the same reliable transport. A lost packet costs a retransmit for both. Coding helps because a node never waits for one particular shard.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 data-i="h2">The rules each side follows</h4>
+    <ul>
+      <li data-i="g1" data-html="1"><b>Gossipsub:</b> mesh of D = 6. A node must hold the whole block before it forwards it. IDONTWANT cancels queued copies, and IHAVE/IWANT on a 700 ms heartbeat rescues stranded nodes.</li>
+      <li data-i="m1" data-html="1"><b>mump2p:</b> the publisher sends 1.5·k coded shards round-robin, matching the dev defaults. Relays forward fresh recoded shards as soon as they hold any, send IDONTWANT once decoded, and pull with IWANT when stuck.</li>
+      <li data-i="x1" data-html="1"><b>Not modelled:</b> CPU for validation and decoding, QUIC, peer scoring, signature checks and the real mesh. This is a wind tunnel, not a mainnet replay.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 data-i="h3">Out in the real world</h4>
+    <ul>
+      <li data-i="w1" data-html="1">mump2p went live on Ethereum mainnet on <b>20 Oct 2026</b>, launching with 16 operators. <a href="https://chainwire.org/2026/10/20/optimum-launches-on-ethereum-mainnet-reaching-3-4b-in-total-value-boosted-across-leading-validators/" target="_blank" rel="noopener">Announcement</a></li>
+      <li data-i="w2" data-html="1">Lido's independent Hoodi test: p95 block arrival went from <b>1,614 to 1,207 ms</b>, late blocks from 1.97% to 0.34%, and wrong head votes fell 45%. <a href="https://research.lido.fi/t/perch-request-for-node-operators-to-run-and-test-optimum-mump2p/11786" target="_blank" rel="noopener">Lido forum</a></li>
+      <li data-i="w3" data-html="1">The cable scenarios are modelled on real events: the <a href="https://en.wikipedia.org/wiki/C-Lion1" target="_blank" rel="noopener">C-Lion1</a> Baltic cut in Nov 2024 and the <a href="https://www.thenationalnews.com/future/technology/2025/09/07/middle-east-internet-slowdowns-could-last-months-after-red-sea-cable-damage" target="_blank" rel="noopener">Red Sea cuts near Jeddah</a> in Sep 2025. Here a cut corridor drops every link that rides it, which is the worst case.</li>
+      <li data-i="w4" data-html="1">Protocol sources: <a href="https://arxiv.org/abs/2508.04833" target="_blank" rel="noopener">OptimumP2P paper</a>, <a href="https://docs.getoptimum.xyz/docs/learn/overview/p2p" target="_blank" rel="noopener">mump2p docs</a>, <a href="https://github.com/getoptimum/optimum-dev-setup-guide" target="_blank" rel="noopener">dev setup defaults</a>.</li>
+    </ul>
+  </div>
+</section>
+<footer><span data-i="foot">Built by ecamli for the Optimum community. Simulation, not a benchmark.</span><span class="mono" id="build"></span></footer>
+</div>
+
+<script>
+/*DATA*/
+/*SIM*/
+</script>
+<script>
+/*APP*/
+</script>

@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="mump2p (RLNC) vs Gossipsub on a real-world map. Your own file is coded with real GF(2^8) arithmetic. Cut undersea cables, black out data centres, watch the attestation deadline.">
+<meta property="og:title" content="Optimum Wind Tunnel">
+<meta property="og:description" content="Same Earth. Same cables. Same block. Two ways to move it.">
+<meta property="og:image" content="https://optimum-wind-tunnel.netlify.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>html{color-scheme:dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>Optimum Wind Tunnel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument console. Controls left, the Earth as the test section centre, the probe (node inspector) right; flight recorder under the map. */
+:root{
+  color-scheme:dark;
+  --bg:#121417; --panel:#181b1f; --panel2:#1e2227; --line:#2a2f35; --line2:#363c44;
+  --fg:#e9edf1; --mute:#8d9ca9; --faint:#5b6670;
+  --land:#23282e; --ocean:#14171a;
+  --m:#b87cff; --m2:#d8b8ff; --mdeep:#5b2aa8;      /* mump2p: Optimum purple */
+  --g:#ff7a59; --g2:#ffc2ad; --gdeep:#8c2f1a;      /* gossipsub: coral */
+  --late:#6b5a55; --dead:#ff4d6d; --ok:#4fd1a5;
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;
+  --bg:#eef0f2; --panel:#ffffff; --panel2:#f5f6f8; --line:#dde1e6; --line2:#c9cfd6;
+  --fg:#16181a; --mute:#5b6670; --faint:#8d9ca9; --land:#d9dee3; --ocean:#f4f6f8;
+  --m:#8a3ffc; --m2:#c9a2ff; --mdeep:#4b1d94; --g:#e0532f; --g2:#ffb39d; --gdeep:#8c2f1a; --late:#a99a94; --dead:#d61f45; --ok:#0f9b72;}}
+:root[data-theme="light"]{color-scheme:light;
+  --bg:#eef0f2; --panel:#ffffff; --panel2:#f5f6f8; --line:#dde1e6; --line2:#c9cfd6;
+  --fg:#16181a; --mute:#5b6670; --faint:#8d9ca9; --land:#d9dee3; --ocean:#f4f6f8;
+  --m:#8a3ffc; --m2:#c9a2ff; --mdeep:#4b1d94; --g:#e0532f; --g2:#ffb39d; --gdeep:#8c2f1a; --late:#a99a94; --dead:#d61f45; --ok:#0f9b72;}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--sans);font-size:14px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+button,select,input{font:inherit;color:inherit}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{height:22px;width:auto}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin:0}
+.brand h1 span{color:var(--m)}
+.tag{font-size:11px;color:var(--mute);border:1px solid var(--line2);padding:2px 8px;border-radius:99px}
+.hspace{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:6px 10px;cursor:pointer;color:var(--mute);font-size:12px;font-weight:600;letter-spacing:.04em}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--fg)}
+.iconbtn{background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600}
+.iconbtn[aria-pressed="true"]{border-color:var(--m);color:var(--m)}
+.lede{font-size:clamp(20px,2.4vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:4px 0 0;text-wrap:balance;max-width:28ch}
+.lede em{font-style:normal;color:var(--m)}
+.sub{color:var(--mute);max-width:78ch;margin:6px 0 0}
+.grid{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media (max-width:1180px){.grid{grid-template-columns:minmax(0,1fr) 330px}.left{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}}
+@media (max-width:1180px){.stage{order:0}.insp{order:1}.left{order:2}}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.left{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ct{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);display:flex;align-items:center;gap:8px}
+.ct b{color:var(--fg);font-weight:700}
+.row{display:flex;align-items:center;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
+label.f .v{color:var(--fg);font-family:var(--mono)}
+.lab{display:flex;justify-content:space-between;gap:8px}
+input[type=range]{width:100%;accent-color:var(--m)}
+select{background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:6px 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--panel2);border:1px solid var(--line2);border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--fg)}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--dead) 18%,transparent);border-color:var(--dead);color:var(--fg);text-decoration:line-through;text-decoration-color:var(--dead)}
+.chip.scen[aria-pressed="true"]{text-decoration:none;background:color-mix(in srgb,var(--m) 18%,transparent);border-color:var(--m)}
+.payload{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:start}
+.payload canvas{width:96px;height:96px;border-radius:8px;image-rendering:pixelated;background:var(--panel2);border:1px solid var(--line2)}
+.drop{border:1px dashed var(--line2);border-radius:8px;padding:8px;font-size:12px;color:var(--mute);display:flex;flex-direction:column;gap:6px}
+.drop.over{border-color:var(--m);color:var(--fg)}
+.drop input[type=text]{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:5px 7px;width:100%;font-size:12px}
+.filebtn{font-size:12px;cursor:pointer;color:var(--m);text-decoration:underline;background:none;border:0;padding:0;text-align:left}
+.stripes{display:grid;gap:2px}
+.stripes div{height:4px;border-radius:2px;background:var(--line2)}
+.note{font-size:12px;color:var(--mute)}
+.note a{color:var(--m)}
+/* map */
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.stagebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stagebar .legend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mute)}
+.ramp{width:120px;height:8px;border-radius:4px}
+.mapbox{position:relative;width:100%;aspect-ratio:1000/520;max-width:100%;border-radius:8px;overflow:hidden;background:var(--ocean)}
+.mapbox canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.hint{position:absolute;left:10px;bottom:8px;font-size:11px;color:var(--mute);pointer-events:none;background:color-mix(in srgb,var(--ocean) 80%,transparent);padding:2px 6px;border-radius:5px}
+.timeline{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center}
+.play{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);cursor:pointer;display:grid;place-items:center}
+.play svg{width:14px;height:14px;fill:var(--fg)}
+.tread{font-family:var(--mono);font-size:13px;min-width:86px}
+@media (max-width:560px){.timeline{grid-template-columns:auto auto 1fr}.barcode{grid-column:1/-1;order:3}}
+.barcode{position:relative;height:60px}
+.barcode canvas{position:absolute;inset:0;width:100%;height:100%;cursor:ew-resize}
+.recorder{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.recorder{grid-template-columns:minmax(0,1fr)}}
+.proto{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.proto h3{margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:12px}
+.kv span:nth-child(odd){color:var(--mute)}
+.kv span:nth-child(even){font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.verdict{font-size:14px;line-height:1.45;text-wrap:pretty}
+.verdict b{font-family:var(--mono)}
+/* inspector */
+.insp h2{margin:0;font-size:18px;letter-spacing:-.01em}
+.insp .meta{font-size:12px;color:var(--mute)}
+.holds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.holds figure{margin:0;display:flex;flex-direction:column;gap:5px}
+.holds canvas{width:100%;aspect-ratio:1;border-radius:8px;image-rendering:pixelated;background:#000;border:1px solid var(--line2)}
+.holds figcaption{font-size:11px;color:var(--mute);display:flex;justify-content:space-between;gap:6px}
+.rank{display:grid;gap:2px}
+.rank i{display:block;height:8px;border-radius:2px;background:var(--line2)}
+.rank i.on{background:var(--m)}
+.matrix{width:112px;height:112px;image-rendering:pixelated;border-radius:6px;border:1px solid var(--line2);background:#000}
+.feed{display:flex;flex-direction:column;gap:4px;min-height:150px}
+.fe{display:grid;grid-template-columns:52px 1fr auto;gap:8px;align-items:center;font-size:11px}
+.fe canvas{width:52px;height:14px;border-radius:3px;image-rendering:pixelated}
+.fe .ev{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
+.fe .ev.new{color:var(--m)} .fe .ev.unh{color:var(--mute)} .fe .ev.unn{color:var(--faint)}
+.fe .t{font-family:var(--mono);color:var(--mute)}
+.split{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.danger{background:transparent;border:1px solid var(--dead);color:var(--dead);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600}
+/* lower */
+.lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:980px){.lower{grid-template-columns:minmax(0,1fr)}}
+.lower h4{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.lower p,.lower li{font-size:13px;color:var(--mute);margin:0}
+.lower ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.lower b{color:var(--fg);font-weight:600}
+.lower a{color:var(--m)}
+footer{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
+:focus-visible{outline:2px solid var(--m);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 37 35" aria-hidden="true"><path fill="currentColor" d="M26.5069 7.47463C24.3635 7.47463 22.3781 8.1536 20.7529 9.30953C19.2285 10.3935 17.1897 10.3421 15.6585 9.26869C13.9191 8.04968 11.7729 7.37362 9.46493 7.48625C4.37345 7.73493 0.249521 11.8778 0.0112662 16.9842C-0.257012 22.721 4.30081 27.4564 9.96172 27.4564C12.1051 27.4564 14.0915 26.7774 15.7157 25.6215C17.2392 24.5374 19.2788 24.5889 20.81 25.6623C22.5505 26.8813 24.6958 27.5574 27.0047 27.4447C32.0952 27.197 36.2191 23.0532 36.4584 17.9468C36.7266 12.21 32.1688 7.47463 26.5078 7.47463H26.5069ZM31.7156 17.7739C31.6429 19.3368 30.9872 20.8162 29.8696 21.9381C28.7519 23.061 27.2788 23.7205 25.7204 23.7973C25.6149 23.8021 25.5073 23.8051 25.4018 23.8051C24.1001 23.8051 22.8507 23.4116 21.7892 22.6676C20.7277 21.9245 19.49 21.5311 18.2077 21.5311C16.9253 21.5311 15.7379 21.9148 14.7162 22.6413C13.646 23.4019 12.384 23.8041 11.0668 23.8041C9.32256 23.8041 7.69834 23.1067 6.49257 21.84C5.28868 20.5743 4.67078 18.9114 4.75311 17.1561C4.82574 15.5932 5.48144 14.1138 6.59908 12.9919C7.71676 11.8691 9.18988 11.2095 10.7482 11.1337C10.8537 11.1288 10.9612 11.1259 11.0668 11.1259C12.3685 11.1259 13.6179 11.5194 14.6794 12.2634C15.7399 13.0065 16.9786 13.3999 18.261 13.3999C19.5239 13.3999 20.7306 13.0162 21.7524 12.2896C22.8226 11.5291 24.0846 11.1269 25.4018 11.1269C27.1461 11.1269 28.7712 11.8243 29.9761 13.091C31.1799 14.3567 31.7979 16.0196 31.7156 17.7749V17.7739Z"/></svg>
+    <h1 lang="en">Optimum <span>Wind Tunnel</span></h1>
+  </div>
+  <span class="tag" data-i="fan">fan-made · not an official Optimum product</span>
+  <div class="hspace"></div>
+  <button class="iconbtn" id="soundBtn" aria-pressed="false" data-i="sound">♪ Listen</button>
+  <div class="seg" role="group" aria-label="Language"><button id="lEN" aria-pressed="true">EN</button><button id="lTR" aria-pressed="false">TR</button></div>
+  <div class="seg" role="group" aria-label="Theme"><button id="thD" aria-pressed="false" data-i="dark">Dark</button><button id="thL" aria-pressed="false" data-i="light">Light</button></div>
+</header>
+
+<section>
+  <p class="lede" data-i="lede" data-html="1">Same Earth. Same cables. Same block. <em>Two ways to move it.</em></p>
+  <p class="sub" data-i="sub">Your own file is split into fragments and coded with real Galois-field arithmetic, then sent across a network laid over real cities, fibre distances and undersea cable routes. Cut the cables, black out a data centre, and watch where the block gets in before the attestation deadline.</p>
+</section>
+
+<div class="grid">
+  <aside class="left">
+    <div class="card">
+      <div class="ct"><b>1</b> <span data-i="c1">Your block</span></div>
+      <div class="payload">
+        <canvas id="srcCv" width="128" height="128" aria-label="payload preview"></canvas>
+        <div class="drop" id="drop">
+          <span data-i="drop">Drop an image here, or</span>
+          <button class="filebtn" id="pick" data-i="pick">choose a file</button>
+          <input type="file" id="file" accept="image/*" hidden>
+          <input type="text" id="msg" maxlength="40" placeholder="…or type a message" aria-label="message">
+        </div>
+      </div>
+      <label class="f"><span class="lab"><span data-i="kL">Fragments k (generation size)</span><span class="v" id="kV">16</span></span>
+        <select id="k"><option value="4">4 (mump2p dev default)</option><option value="8">8</option><option value="16" selected>16</option><option value="32">32</option></select></label>
+      <div class="stripes" id="stripes"></div>
+      <div class="note" id="fragNote"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><b>2</b> <span data-i="c2">Conditions</span></div>
+      <div class="chips" id="scen"></div>
+      <label class="f"><span class="lab"><span data-i="bL">Block size on the wire</span><span class="v" id="bV"></span></span>
+        <input type="range" id="B" min="0" max="5" step="1" value="3"></label>
+      <label class="f"><span class="lab"><span data-i="lL">Packet loss per link</span><span class="v" id="lV"></span></span>
+        <input type="range" id="loss" min="0" max="8" step="0.5" value="1"></label>
+      <label class="f"><span class="lab"><span data-i="pL">Block published at</span><span class="v" id="pV"></span></span>
+        <input type="range" id="pubAt" min="1000" max="3500" step="250" value="3000"></label>
+      <label class="f"><span class="lab"><span data-i="betaL">Shard budget per peer (β)</span><span class="v" id="betaV"></span></span>
+        <input type="range" id="beta" min="1.5" max="6" step="0.5" value="3"></label>
+      <div class="note" data-i="betaN">β trades bandwidth for speed: each relay offers a peer at most β·k/D fresh combinations before it waits to be asked.</div>
+    </div>
+
+    <div class="card">
+      <div class="ct"><b>3</b> <span data-i="c3">Sabotage</span></div>
+      <div class="note" data-i="cutN">Cut a cable corridor here or on the map. Every peer link that rides it goes dark.</div>
+      <div class="chips" id="cuts"></div>
+      <div class="note" data-i="darkN">To black out a city, click one of its nodes and use the button in the probe.</div>
+      <div class="chips" id="darkList"></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stagebar">
+      <div class="seg" role="group" aria-label="View">
+        <button id="vM" aria-pressed="true">mump2p</button><button id="vG" aria-pressed="false">Gossipsub</button><button id="vD" aria-pressed="false" data-i="vD">Who wins where</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="mapbox" id="mapbox"><canvas id="map"></canvas><div class="hint" data-i="hint">Click a node to probe it · click a ✂ badge to cut a corridor</div></div>
+    <div class="timeline">
+      <button class="play" id="play" aria-label="Play or pause"><svg viewBox="0 0 10 10" id="playIco"><path d="M2 1h2v8H2zM6 1h2v8H6z"/></svg></button>
+      <select id="speed" aria-label="Playback speed"><option value="0.1">0.1×</option><option value="0.25" selected>0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select>
+      <div class="barcode" id="barcode"><canvas id="bc"></canvas></div>
+      <div class="tread" id="tread">0 ms</div>
+    </div>
+    <p class="verdict" id="verdict"></p>
+    <div class="recorder">
+      <div class="proto"><h3><span class="dot" style="background:var(--m)"></span><span lang="en">mump2p</span> <span class="note" data-i="rlnc">RLNC shards</span></h3><div class="kv" id="kvM"></div></div>
+      <div class="proto"><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span> <span class="note" data-i="full">full block</span></h3><div class="kv" id="kvG"></div></div>
+    </div>
+  </main>
+
+  <aside class="card insp" id="insp">
+    <div class="ct" data-i="probe">Probe</div>
+    <div><h2 id="iName">-</h2><div class="meta" id="iMeta"></div></div>
+    <div class="holds">
+      <figure><canvas id="hM" width="128" height="128"></canvas><figcaption><span>mump2p</span><span class="mono" id="hMt"></span></figcaption></figure>
+      <figure><canvas id="hG" width="128" height="128"></canvas><figcaption><span>Gossipsub</span><span class="mono" id="hGt"></span></figcaption></figure>
+    </div>
+    <div class="note" id="holdNote"></div>
+    <div class="split">
+      <canvas class="matrix" id="mx" width="32" height="32" aria-label="coefficient matrix"></canvas>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div class="lab" style="font-size:12px"><span class="note" data-i="rankL">Rank</span><span class="mono" id="rankV"></span></div>
+        <div class="rank" id="rank"></div>
+        <div class="note" data-i="mxN">Left: the coefficient matrix this node holds, reduced to echelon form over GF(2⁸). A diagonal of single bright pixels means every fragment is solved.</div>
+      </div>
+    </div>
+    <div class="ct" data-i="feedT">Shards arriving here</div>
+    <div class="feed" id="feed"></div>
+    <button class="danger" id="darkBtn"></button>
+  </aside>
+</div>
+
+<section class="lower">
+  <div class="card">
+    <h4 data-i="h1">What is real here</h4>
+    <ul>
+      <li data-i="r1" data-html="1"><b>The coding.</b> Every shard carries a random coefficient vector over GF(2⁸). Relays recode by mixing what they already hold, without decoding first. The probe runs Gaussian elimination on the actual bytes of your file.</li>
+      <li data-i="r2" data-html="1"><b>The geography.</b> Nodes sit in 38 hosting hubs weighted toward where Ethereum nodes cluster. Latency is great-circle distance × 1.5 at 200 km per ms of fibre.</li>
+      <li data-i="r3" data-html="1"><b>The bandwidth.</b> 20% of nodes at 1 Gbps and 80% at 50 Mbps, the same split the OptimumP2P paper used in its Ethshadow runs.</li>
+      <li data-i="r4" data-html="1"><b>Fairness.</b> Both protocols get the same peers, the same links, the same loss and the same reliable transport. A lost packet costs a retransmit for both. Coding helps because a node never waits for one particular shard.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 data-i="h2">The rules each side follows</h4>
+    <ul>
+      <li data-i="g1" data-html="1"><b>Gossipsub:</b> mesh of D = 6. A node must hold the whole block before it forwards it. IDONTWANT cancels queued copies, and IHAVE/IWANT on a 700 ms heartbeat rescues stranded nodes.</li>
+      <li data-i="m1" data-html="1"><b>mump2p:</b> the publisher sends 1.5·k coded shards round-robin, matching the dev defaults. Relays forward fresh recoded shards as soon as they hold any, send IDONTWANT once decoded, and pull with IWANT when stuck.</li>
+      <li data-i="x1" data-html="1"><b>Not modelled:</b> CPU for validation and decoding, QUIC, peer scoring, signature checks and the real mesh. This is a wind tunnel, not a mainnet replay.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 data-i="h3">Out in the real world</h4>
+    <ul>
+      <li data-i="w1" data-html="1">mump2p went live on Ethereum mainnet on <b>20 Oct 2026</b>, launching with 16 operators. <a href="https://chainwire.org/2026/10/20/optimum-launches-on-ethereum-mainnet-reaching-3-4b-in-total-value-boosted-across-leading-validators/" target="_blank" rel="noopener">Announcement</a></li>
+      <li data-i="w2" data-html="1">Lido's independent Hoodi test: p95 block arrival went from <b>1,614 to 1,207 ms</b>, late blocks from 1.97% to 0.34%, and wrong head votes fell 45%. <a href="https://research.lido.fi/t/perch-request-for-node-operators-to-run-and-test-optimum-mump2p/11786" target="_blank" rel="noopener">Lido forum</a></li>
+      <li data-i="w3" data-html="1">The cable scenarios are modelled on real events: the <a href="https://en.wikipedia.org/wiki/C-Lion1" target="_blank" rel="noopener">C-Lion1</a> Baltic cut in Nov 2024 and the <a href="https://www.thenationalnews.com/future/technology/2025/09/07/middle-east-internet-slowdowns-could-last-months-after-red-sea-cable-damage" target="_blank" rel="noopener">Red Sea cuts near Jeddah</a> in Sep 2025. Here a cut corridor drops every link that rides it, which is the worst case.</li>
+      <li data-i="w4" data-html="1">Protocol sources: <a href="https://arxiv.org/abs/2508.04833" target="_blank" rel="noopener">OptimumP2P paper</a>, <a href="https://docs.getoptimum.xyz/docs/learn/overview/p2p" target="_blank" rel="noopener">mump2p docs</a>, <a href="https://github.com/getoptimum/optimum-dev-setup-guide" target="_blank" rel="noopener">dev setup defaults</a>.</li>
+    </ul>
+  </div>
+</section>
+<footer><span data-i="foot">Built by ecamli for the Optimum community. Simulation, not a benchmark.</span><span class="mono" id="build"></span></footer>
+</div>
+
+<script>
+const MAP={"d":"M392.4,495.1L392.6,496.2L392.8,497.1L388.8,496.8L384.9,497L382.2,496.3L382.1,496.2L380.7,495.6L384.8,495.6L388.8,495.8L389.5,495L390,494.2ZM210.5,493.9L207.6,494.2L203.9,493.4L201.5,492.6L201.2,492.5L199,491.9L198.8,491L202.8,491.4L205.7,492.1L208.4,492.9ZM416.4,490.6L419.1,491.6L420.5,493L421.2,493.9L421.8,495.1L419.3,495.7L416.6,496.3L413.6,496.8L410.1,497.2L405.8,497.1L403,496.4L402.8,495.5L406.3,494.9L407.4,494.2L408.1,493.2L408.5,492.4L409.2,491.6L410,490.6L410.9,490.6L413.4,490.1ZM264.4,479.7L267.2,480L269.2,479.6L268.9,480.5L267.7,481.1L264.8,480.9L262,480L261.6,479.2ZM255.9,479.6L259.8,480.6L258.6,480.5L255.8,480.2L252.5,479.6L253.3,479ZM304.6,475.7L307,476L308.9,475.8L311.2,477.2L309.5,477L307.2,477.1L304.7,477L302.1,477.1L299.7,476.6L297.9,475.6L298.8,475.2L301.6,475.5ZM363.6,473.2L364.4,474.4L364.6,475.4L364.5,476.3L362.4,476.6L360.4,477.1L357.9,477.1L358.3,476.1L356.1,476.5L354.1,476.8L352.2,476.1L351.5,475L353.1,474L354.3,473.7L356.7,473.8L356.6,472.5L356.2,471.5L355.1,469.4L355.6,468.2L357.3,467.8L358.8,468.8L359.8,469.7L361.2,470.9L362.5,472ZM197.6,504.2L197.6,504.2L197.6,504.2L197.7,504.2L196,503.2L200.8,503.7L200.8,503.7L200.8,503.5L200.8,503.4L200.9,503.2L200.9,503.1L201.1,503.1L201.4,503.2L206.1,503.9L206,503.2L206.1,503.1L210.2,502.8L213,503.2L214.4,503.4L218.7,503.9L224.7,504.4L230.1,504.9L237.8,505.2L241.2,504.8L249.2,505.1L254.8,505.6L257.7,505.1L261.1,504.7L259.3,503.9L252.5,503.9L246,503.5L242.8,502.8L237.2,502.4L235.6,501.6L234.5,500.8L233.6,500.1L231.6,499.3L227.6,498.7L224.8,498L220.9,497.3L225.4,497.5L228.9,497.1L232.8,497.8L234.8,497.2L236.4,496.4L236.7,495.7L234.6,494.8L231.3,494.2L227.7,493.6L223.7,493.5L219.9,493.1L216.1,492.9L213.6,492.1L210.1,491.4L207.4,490.6L203,487.9L204.2,488.1L207,488.9L209.7,488.6L212.2,488.3L215.2,489.3L217.8,489.1L219.6,488.6L221.1,488L222.2,487.2L224.7,486.9L223.5,486L221.8,485.1L221.3,484.3L223.2,483.9L225.3,484.7L227.6,484.2L229.1,483.6L231.8,483.5L234.1,483.3L236,482.7L237.5,482.2L239.3,481.6L241,481.8L242.5,482L245,481.6L248,482.1L250.6,482L252.8,481.7L255.6,481.9L258.7,482.2L261.3,482.1L264.2,482.1L267.1,482.2L269.6,482.1L270.9,481.4L272.9,481L275.8,481.5L277.7,481.1L279,480.2L280.9,481L282.4,481.8L284.4,482.7L285.7,481.9L288.8,482.9L291.7,483.1L294.5,483.8L297.1,483.7L299.1,483.2L302.1,483.3L305,483.7L308,484.1L308.1,483L306.2,482.2L304.5,481.4L301.9,481.2L300,480.2L298.8,479.3L296.7,477.4L298.4,477.8L301.1,477.9L303.5,477.8L306.1,478.2L308.7,478.9L310.2,479.8L312.9,479.9L315.2,479.6L317.5,479.1L319.7,478.8L322.1,479.4L324.6,479.2L324.9,477.3L327.3,478.4L329.8,478.9L332.1,478.6L334.4,479.6L337,479.7L339.5,480L342.2,480.5L343.1,479.6L343.3,478.7L345.9,479.7L348.4,479.5L350.7,480L352.5,480.8L355,480.6L356.7,480L358.3,479.4L360.4,479.1L363,478.8L365.3,478.4L367,477.9L367.7,477.1L367.6,476L366.8,474.9L365.7,473.9L364.5,472.9L363.4,471.9L362.4,471L361.8,470L361.5,469L362,468L362.3,466.9L362.1,465.9L361.2,464.7L360.5,463.7L360.9,462.5L361.7,461.7L362.6,460.7L363.7,459.9L365,459.1L365.3,457.9L366.2,457.2L367.2,456.5L369.2,456.3L370.1,455.4L371.4,454.9L373,454.6L374.3,453.9L375.2,453L376.8,452.7L378.3,453.4L377.8,454.3L375.9,455.1L375.3,455.7L373.5,455.3L371.9,455.6L370.7,456.2L369.4,456.9L368.7,457.7L368.9,458.7L369.4,459.7L370.8,460.6L369.6,461.3L367.7,461.5L367,462.4L366.1,463.2L365.4,464.4L365.5,465.4L366.7,466.4L368.1,467.3L370.1,467.9L372,468.7L373.3,469.7L374.2,470.7L375.2,471.7L376.5,472.6L377.6,473.5L378.9,475.9L379.9,476.8L380.5,477.8L381.6,478.8L382,480.1L381.4,481.2L380.7,482L378.3,482.3L377.9,483.2L377.2,484L374.8,484.9L372.5,485.3L370.4,485.8L368.1,486.3L367.2,487.3L364.3,487.4L360.9,487.3L358,487.5L354.9,487.5L356.1,488.4L359.2,488.8L361.7,489.5L363.5,490.3L361.9,491L358.6,490.8L356.4,491.4L357,492.3L357.6,493.2L360.3,493.9L361.4,494.8L364.3,495.6L368.4,495.9L372.1,496.5L375.2,497.1L379,497.8L383.7,498.1L388.4,498.7L391.9,499.3L395.7,499.9L398.2,500.8L399.6,501.5L401.2,500.9L403.6,500.3L406.1,499.7L409.4,499.2L412.2,498.6L416.6,498.6L421.1,498.9L424.9,499.3L425.5,498.5L427.7,497.9L432.2,497.8L435.5,497.4L438.6,496.9L442.2,496.6L446.1,496.3L448.7,495.7L447.1,495L446.1,494.2L445.9,493.4L442.4,493.5L438.7,493.8L435.2,493.8L434.4,493L434,491.3L434.7,490.8L437.2,490.3L440.1,489.7L442.2,489L444.3,488.3L445.7,487.4L448.2,487L450.7,486.7L451.9,486.5L454.8,486.4L457.5,486L459.8,485.6L462,485L464,484.4L466.5,483.7L468.1,482.9L469.8,482.1L470.2,481.2L468.1,480.6L468.7,479.6L469.9,478.8L471.8,478.3L473.9,477.7L475.8,476.9L477.3,475.9L478.2,474.7L479.5,474L481.9,474.1L482.9,475L485.3,475.1L485.3,474.1L486.3,473.1L488.5,473.4L489,474.3L491.4,474.5L493.9,474L496.4,473.7L498.7,473.9L499.5,474.9L501.7,474.1L503.8,473.6L506,473.3L508.3,472.9L510.3,472.3L512.6,471.9L514.3,471.4L515.6,470.4L517,471.1L519.1,470.8L520.5,472L521.6,472.9L523.9,472.4L524.9,471.4L527,470.6L529.6,470.8L530.3,471.8L532.1,470.8L534.3,470.5L536.6,470.4L538.8,470.4L541,470.8L543.1,470.9L543.9,471.8L545.1,472.5L547.4,472.1L549.7,472L552,472L554.2,471.9L556.3,471.6L558.5,471.3L560.4,470.5L562.4,470.1L564.5,469.8L566.2,469.1L567.7,467.7L569,466.8L571.1,467.2L571.6,468.1L573.2,468.8L575.4,468.6L576.6,469.5L577.9,470.1L580.1,469.5L581.1,468.4L583.1,467.9L585.5,467.1L587.6,466.7L590.1,466.2L591.9,465.6L593.8,465L595.6,464.4L597.4,464.7L599.5,463.8L601.1,463.1L603,463.1L605,462.5L605.7,461.5L607.7,460.8L609.6,460.3L611.8,459.9L613.8,459.6L615.6,459.8L617.5,460.1L618.9,460.8L618.6,462L620.1,462.9L621,463.6L623.4,463.9L624.5,464.6L625.8,465.4L627.7,465.5L629.6,465L631.9,463.9L633.5,464.5L635.4,464.8L637.2,465.1L639.1,465.3L641.1,465.3L641.5,468L641.1,468.7L640.3,469.9L638,470.5L636,471.5L635.7,472.5L638,472.5L637.2,473.5L635.7,474.4L634.3,475.5L635.4,476.3L637.5,476.5L640,476.1L641.6,475.1L642.8,474.1L644.3,473.3L646,472.6L647,471.7L648.7,470.4L650.1,470.1L652.4,470L654.6,469.7L656.9,469.3L658.5,468.3L659.6,467.3L661.5,466.3L663.9,465.7L665.9,465.1L667.5,464.3L669,463.8L670.7,463.4L672.6,463.6L674.6,463.4L676.8,463.1L679,463.2L680.9,462.5L683,460.7L683.3,461.4L683.6,462.7L685,463.2L686.8,463.4L689,463.1L691,463.3L692.9,463.4L694.4,463.1L696,463.3L697.2,463.8L699.3,463.5L701.5,463.5L703.7,463.1L705.6,463.5L707.5,462.6L709.2,461.7L711.1,461L715.1,459L716.2,459.3L717.3,460.1L718,461L719.5,462.6L721.5,462.7L723.4,462.7L725.8,462.4L728.3,462L730.6,461.3L732.6,460.5L735,460.4L737,459.8L738.2,460.3L738.6,461.2L739.4,462L741.8,461.9L742.7,462.6L744.6,463.3L747,463.5L749.3,463.3L751.6,462.5L753.7,461.6L755.7,461.4L757.3,461.8L759.2,462.1L761.5,461.6L763.4,461.6L765,461.9L766.6,462.2L768.9,461.7L771.5,461.3L773.7,461.2L776.1,461.2L778.2,460.9L780.3,460.7L782,459.4L783.1,458.3L783.8,459L783.1,460.2L782.7,461.3L782.8,462.2L784.1,462.7L786.6,462.5L789.3,462.5L791.4,462.3L794.1,462.3L796.1,462.3L798.7,462.4L800.8,462.6L801.4,463.4L800,464.4L800.6,465.2L802.1,465.8L803.7,466.5L805.9,467L808.2,467.4L809.8,467.8L812.1,467.8L814.3,467L815.4,467.7L816,468.5L817.1,469.1L819.3,469.4L821.3,469.7L821.1,470.7L822.7,471.3L823.1,472.2L824.9,472.6L827.3,472.6L829.2,472.7L831.7,472.7L833.8,472.9L835.6,473.2L836.9,473.8L838.3,474.3L838.8,475.1L837.3,476.1L835.1,477L832.7,478.1L830.9,479L828.6,480L825.5,480.4L823.2,481.3L820,481.8L817.8,482.8L815.3,483.7L812.9,484.5L810.7,485.5L809,486.4L807.2,487.4L806,488.3L805.7,489.2L804.8,490.1L804.4,490.9L807.3,491.2L806.4,492.2L802.6,492.6L799,493.1L795.3,493.1L791.7,494.4L789.6,495.4L787.4,496.2L785,497L786.1,497.7L785.3,498.6L785.2,499.3L785.9,500L787,500.6L788.2,501.2L790.6,501.8L789.1,502.7L793,503L792.9,503.2L792.6,503.7L798.6,503.2L800.8,503.8L802.4,504.2L785.8,507.9L764.6,510L500,510L235.4,510L214.2,507.9ZM345.2,425.9L348.8,427.7L352.2,428.4L351.7,429.8L349.6,430L348.1,429L347.8,430.1L346.1,431L343.6,430.7L341.6,429.8L339.1,429.4L335.6,427.8L332.7,426.2L328.3,422.9L330.4,423.5L334.4,425.5L337.8,426.6L338.5,425.2L338.5,423.2L340.2,422L342,422.3L343.3,423.7ZM363.9,417.8L366.1,419.1L365.7,420.2L362.8,421L361.5,420L359.9,421.3L358.4,420L360.6,418.2L362.8,419ZM664.8,413.6L661.1,413.8L661.5,412.2L662.3,411L662.6,410.4L663.9,411.3L666,411.7L665.9,412.3ZM857,386.5L858.8,387.5L860.4,387.1L862.6,386.5L863.9,386.7L862.1,390.4L860.7,391.5L859.1,393.9L858.7,393.1L855.8,395.2L855.4,395.1L854,395L853.9,392.3L854.7,390.3L854.7,387.6L855.5,386.2ZM924.6,386.9L924.3,388.1L926.8,386.9L926.7,388.2L925.9,389.5L924.1,390.9L921,393.2L918.9,394.4L918.8,395.9L917,395.9L914.1,397.1L912.1,399.1L908.6,402.2L905.7,403.5L903.9,404.4L901.8,404.3L900.9,403.3L898.5,403.1L898.8,402L901.7,399.7L906.7,396.7L908.7,396.1L911.2,395L914.3,393.4L916.8,391.8L919.4,389.5L920.8,388.7L922.2,387L924.8,385.6ZM937.1,372.1L937.1,375.4L938.3,373.3L939,374.1L938,376.5L939.4,377.5L941,377.7L943.1,376.6L944.1,376.9L941.9,379.7L940.1,381.5L938.2,381.4L937,382.3L936.4,383.7L935.7,384.2L933.7,385.9L931.2,388L928.5,389.2L928.6,388.4L927.8,388L930.9,385.5L931.1,383.8L929.2,382.5L929.9,381.4L932.4,380.3L934.2,377.9L935.2,375.9L935.3,373.9L935.7,373.3L935.2,372L934.7,369.3L934.8,367.1L935.8,366.8L936.3,368.6L937.8,369.4ZM936.1,328.6L934.9,329.4L933.7,328.5L932.2,327.1L931,325.5L929.9,323.3L929.8,322.2L930.9,322.3L932.1,323.3L933,324.4L933.6,325.3L935.2,327.2ZM969.7,313.6L970.4,314.5L969.6,316.2L967.8,316.6L966.5,316.2L966.6,314.8L967.9,313.8L969,314.2ZM974.6,311.2L972.8,312L970.9,312.6L970.9,311.5L972.3,310.8L973.2,310.7L975,309.7L974.6,311.2ZM25,309.7L25,309.7L25.5,309.6L25.5,311L25.4,311.2L25.4,311.2L25.4,311.2L25,309.7ZM942.6,310.9L941.7,311.3L941.1,310L941.4,309.2ZM941.7,306.2L941.6,308.7L941,308.3L940.4,308.5L940.2,307.6L940.6,305.2ZM632.6,301.9L632.8,305.6L633.4,307.1L633,308.6L632.5,309.5L631.7,307.7L631.1,308.6L631.5,310.9L631.2,312.2L630.4,312.9L630.1,315.5L628.8,319.2L627.1,323.4L625,329.3L623.6,333.7L622.1,337.3L619.9,338L617.5,339.3L616.1,338.5L614.2,337.4L613.6,335.8L613.7,333L613,330.5L612.9,328.3L613.5,326.1L614.8,325.5L614.9,324.5L616.3,322.1L616.7,320.1L616.2,318.7L615.8,316.7L615.8,313.9L616.8,312.1L617.3,310.2L618.6,310L620.1,309.4L621.1,308.9L622.3,308.8L623.9,307L626.2,305.1L627,303.6L626.7,302.3L627.8,302.6L629.4,300.5L629.6,298.6L630.5,297.2L631.4,298.6L632,299.9ZM880.1,302.6L880.6,305L882.5,303.8L883.2,305.1L884.2,306.3L883.7,307.7L883.8,310.4L883.9,311.9L884.5,312.3L884.6,315L884,316.6L884.4,318.7L886.9,320.3L888.4,321.8L889.8,323.1L889.3,323.9L890.3,325.8L890.4,329.2L891.6,328.5L892.3,329.8L893.1,329.4L892.6,332.7L893.9,334.6L894.8,335.8L896,338.3L895.9,340.8L895.4,342.6L894.5,344.5L894.8,347.1L893.7,349.9L892.7,351.3L890.9,354.1L890.3,355.9L888.9,358.1L886.6,360.9L884.1,362.5L882.1,364.9L880.6,366.4L878.7,369.1L877,370.6L875.3,373L873.9,375.1L873.6,376.1L871.6,377.2L868.8,377.3L865.9,378.5L864.2,379.7L862,381.1L860.6,379.7L859.4,379.1L860.5,377.5L858.9,378.1L855.7,380.4L853.9,379.5L852.7,379L851.4,378.8L849.4,377.9L848.7,376L849.3,373.7L849.4,372.1L848.7,370.8L846.5,370.5L847.9,368.9L848.2,366.6L846.1,368.8L843.7,369.4L845.7,367.6L846.8,365.9L848.4,364.3L849.1,362L846,364.7L844,365.7L842,368.2L840.6,366.9L841.3,365.3L840.6,363L839.7,361.9L840.4,361.1L837.9,359.3L836.1,359.2L834.2,357.7L829.5,358L825.9,359.1L822.6,360.1L820.3,359.9L817,361.5L814.6,362.2L813.5,363.8L812.1,365.1L810,365.2L808.3,365.5L806.3,364.9L804.3,365.2L802.5,365.4L800.5,367L799.8,366.9L798.2,367.8L796.7,368.8L794.9,368.6L793.2,368.6L791.2,366.6L790,366.1L790.7,364.3L792.1,363.9L792.7,363.1L793,362L794,359.9L794.3,358L793.9,354.9L794,353.1L794.6,351.3L794.2,349.3L794.3,348.4L793.5,347.1L793.9,344.7L793,342.2L793,340.9L793.8,342.3L793.6,339.4L794.7,340.3L795.2,341.5L795.5,339.9L794.8,337.4L794.8,336.5L794.4,335.5L795.1,333.7L795.8,333L796.5,331.4L796.6,329.6L798.1,327.4L797.8,329.7L799.4,327.6L801.7,326.5L803.3,325.2L805.5,324.1L806.7,323.8L807.4,324.2L809.7,323.1L811.3,322.7L811.8,322L812.6,321.8L814,321.8L817,320.9L818.6,319.5L819.6,317.9L821.5,316.3L821.8,315.1L822.2,313.4L824.4,310.7L825.1,313.4L826.3,312.8L825.6,311.3L826.7,309.8L827.8,310.5L828.5,308.2L830.1,306.6L831,305.4L832.4,304.9L832.5,304L833.7,304.4L833.8,303.6L835,303.1L836.4,302.7L838.1,304.2L839.3,306L841,306L842.6,306.3L842.3,304.6L843.9,302.1L845.3,301.3L844.9,300.5L846.3,298.8L848.1,297.7L849.4,298L851.7,297.5L851.8,295.9L850,294.9L851.5,294.4L853.2,295.2L854.4,296.4L856.5,297.2L857.3,296.9L858.9,297.9L860.5,297L861.5,297.3L862.2,296.7L863.2,298.2L862.3,299.8L861.1,301.1L860.2,301.2L860.3,302.4L859.3,304L858.1,305.5L858.1,306.4L859.9,308.1L861.8,309.1L863,310.2L864.5,312L865.3,312L866.5,312.8L866.7,313.7L869,314.8L871,313.7L871.8,312.1L872.6,310.7L873.3,309L874.5,306.5L874.4,305L874.7,304.1L874.7,302.4L875.4,300L876,299.4L875.7,298.4L876.6,296.7L877.3,295L877.5,294.1L878.6,293L879.2,294.5L879.1,296.4L879.7,296.8L879.7,298.1L880.4,299.7L880.3,301.4ZM930.8,292.4L931.4,293.5L929.6,293.4L928.8,291.5L930.3,292.3ZM820.9,291.7L819.7,291.7L816.4,289.5L819,288.9L820.3,289.9L821.1,290.8ZM927.7,290.5L926.6,290.6L925.1,290.3L924.6,289.8L924.9,288.6L926.6,289.1L927.4,289.7ZM930,289.7L929.5,290.2L927.9,287.6L927.5,285.7L928.4,285.7L929.1,288.2ZM830.8,291.3L828.4,292L828.2,291.7L828.5,290.6L829.8,288.7L832.6,287.5L832.9,286.8L835.3,286.1L837.2,286L838,285.6L839,286L837.9,286.8L835.1,288.1L832.7,289ZM813.9,285L814.8,285.8L816.5,285.6L817.1,286.9L813.9,287.5L812.1,287.9L810.6,287.9L811.7,286.1L813.2,286.1ZM827.3,285L826.7,286.7L822.7,287.6L819.2,287.2L819.3,286.1L821.4,285.5L823,286.4L824.8,286.1ZM925.6,285.8L925.7,286.4L923.7,285.1L922.4,284L921.5,282.9L921.9,282.6L923.1,283.4L925.1,284.8ZM919.7,282.7L919.2,282.9L918.1,282.2L917.1,280.9L917.3,280.4L918.8,281.7ZM789.5,280.9L794.6,281.3L795.3,280L800.1,281.5L801,283.5L804.9,284L808,285.9L804.9,287L802.1,285.8L799.7,285.9L796.9,285.7L794.5,285.1L791.5,283.9L789.5,283.6L788.4,284L783.6,282.7L783.2,281.4L780.8,281.2L782.8,278.2L786,278.4L788.1,279.6L789.2,279.8ZM859.2,279.2L857.7,281.3L857.6,279L858.1,277.9L858.7,276.8L859.3,277.7ZM915.5,281.1L914.7,281.4L913.6,280.2L912.6,278.2L912.2,275.9L912.6,275.6L912.8,276.5L913.6,277.2L914.7,279.2L915.9,280.2ZM905.4,276.9L904,277.2L903.5,278L902,278.8L900.5,279.5L899.1,279.5L897,278.6L895.6,277.8L895.8,276.8L898.2,277.3L899.7,277L900.2,275.5L900.6,275.5L900.7,277.1L902.2,276.9L903.1,275.8L904.6,274.7L904.4,272.9L906,272.8L906.5,273.3L906.4,275ZM839.7,270.7L838.7,271.7L836.8,271.1L836.4,269.8L839.1,269.7ZM848.3,269.6L849.2,271.9L847,270.6L844.8,270.4L843.3,270.6L841.4,270.5L842.1,268.8L845.4,268.7ZM908.6,273.9L907.8,274.7L907.4,272.9L906.8,271.7L905.6,270.7L904.2,269.4L902.3,268.5L903,267.7L904.5,268.6L905.3,269.3L906.4,270L907.4,271.3L908.4,272.3ZM858.3,263.6L858.9,268.6L861.6,270.4L863.9,267.1L867,265.3L869.4,265.3L871.7,266.3L873.6,267.4L876.5,268L881.1,270.2L885.9,271.9L887.7,273.5L889.1,275.1L889.4,276.9L893.7,278.8L894.2,280.4L891.7,280.8L892.2,282.8L894.3,284.9L895.7,288.1L897.3,288L897,289.4L899,289.9L898.1,290.5L900.8,291.8L900.4,292.7L898.6,292.9L898.1,292.1L895.8,291.8L893.2,291.3L891.4,289.3L890,287.6L888.9,284.9L885.6,283.6L883.2,284.5L881.5,285.5L881.6,287.8L879.4,288.8L878,288.3L875.2,288.2L873.1,285.6L870.5,285L869.7,285.9L866.4,286L867.7,283.5L869.5,282.6L869,279.3L867.9,276.7L862.9,274.1L860.7,273.8L856.8,270.9L856,272.4L854.9,272.7L854.4,271.6L854.4,270.2L852.4,268.7L855.3,267.6L857.2,267.7L857,266.8L853.1,266.8L852.1,265L849.7,264.4L848.6,262.9L852.2,262.1L853.6,261.1L857.9,262.4ZM834.5,255.6L832.4,258.7L830.4,259.3L827.8,258.7L823.3,258.8L821,259.3L820.6,261.6L823,264.4L824.4,263L829.4,261.9L829.2,263.3L828,262.9L826.9,264.7L824.5,265.9L826.9,269.8L826.4,270.9L828.6,274.5L828.5,276.5L827.1,277.4L826.1,276.3L827.5,273.8L824.8,275L824.2,274.1L824.6,272.9L822.7,271.1L823,268.1L821.2,269.1L821.3,272.7L821.2,277.1L819.5,277.5L818.4,276.6L819.3,273.8L819,270.8L817.9,270.8L817.1,268.7L818.3,266.6L818.7,264.2L820,259.5L820.6,258.3L822.9,256L825,256.9L828.3,257.3L831.4,257.2L834,254.9ZM843.7,256.5L843.6,259.2L842.2,258.9L841.8,260.8L842.9,262.4L842.1,262.8L841.1,260.8L840.3,256.9L840.8,254.4L841.6,253.3L841.9,255L843.4,255.2ZM782.2,278.1L779.2,278.1L777.1,275.6L773.8,273L772.7,271.2L770.7,268.7L769.5,266.3L767.5,262L765.1,259.4L764.3,256.8L763.3,254.4L760.9,252.4L759.4,249.8L757.4,248L754.5,244.6L754.2,243.1L755.9,243.2L760,243.8L762.5,246.8L764.6,248.9L766.2,250.2L768.8,253.5L771.5,253.6L773.7,255.7L775.3,258.3L777.3,259.7L776.3,262.2L777.8,263.3L778.8,263.4L779.2,265.5L780.1,267.2L782,267.5L783.3,269.5L782.5,273.3ZM814.8,254.4L817.8,257.2L814.7,257.6L813.8,259.7L813.9,262.5L811.3,264.6L811.2,267.7L810,272.4L809.6,271.3L806.6,272.7L805.6,270.8L803.7,270.6L802.4,269.6L799.2,270.7L798.2,269.3L796.5,269.4L794.3,269.1L794,264.9L792.6,264.1L791.4,261.4L791,258.7L791.3,255.9L792.8,253.8L794.8,254.9L796.9,254.3L797.4,251.7L798.5,251.1L801.7,250.4L803.5,248L804.7,246L805.8,244.9L807.9,243.2L809.9,241L811.1,238.6L812.2,238.6L813.6,240.2L813.8,241.5L815.6,242.4L817.9,243.3L817.8,244.5L816,244.7L816.5,246.2L814.6,247.2L813.2,250L815.2,252.9ZM836.4,234L836.9,236L837.2,237.8L836.5,240.6L835.3,237.5L834.1,239L835.1,241.3L834.5,242.8L831.2,241L830.3,238.7L831,237.3L829.2,235.8L828.5,237.1L827.2,237L825.4,238.7L824.9,237.8L825.7,235.2L827.3,234.3L828.7,233.1L829.7,234.5L831.7,233.7L832,232.3L833.9,232.2L833.5,229.8L835.8,231.3L836.2,232.9ZM716.5,240.8L714.3,241.6L712.9,239.1L712.2,234.7L713.1,229.6L715.1,231.3L716.4,233.5L717.9,236.8L717.6,240ZM338,228.7L335.8,229.1L335.3,228.8L336.1,228L336.1,226.7L337.7,226.3L338.2,226.4ZM829.5,228.2L828.7,229.2L828,231.2L827.3,232.1L825.4,230L825.9,229.1L826.5,228.3L826.6,226.4L828,226.2L827.8,228.3L829.5,225.3ZM815.2,231.2L812,234.1L813.1,232L814.8,230.1L816.2,227.9L817.3,224.9L818,227.4L816.4,229.1ZM823.4,223.2L825.1,224.2L826.8,224.2L826.9,225.5L825.8,226.8L824.2,227.7L824,226.3L824,224.7ZM832.9,222.4L834.1,225.9L831.9,225L832.1,226.1L832.9,228L831.8,228.7L831.4,226.5L830.6,226.3L830,224.5L831.6,224.7L831.4,223.5L829.5,221.2L832,221.2ZM822,219.6L821.6,222.3L820.3,220.7L818.7,218.4L821,218.5ZM818.9,202.7L820.6,203.6L821.3,202.8L821.7,203.6L821.5,204.9L822.8,207.1L822.5,209.7L821.1,210.7L821.1,213.2L822,215.7L823.5,216L824.6,215.7L828.1,217.4L828.1,219.1L829.1,219.8L829,221.2L826.7,219.7L825.5,218.1L825,219.2L823.1,217.4L820.7,217.8L819.3,217.1L819.3,215.9L820,215.1L819.1,214.4L818.9,215.5L817.4,213.7L816.8,212.3L816.2,209.4L817.4,210.4L816.9,205.5L817.3,202.7ZM327.5,203.6L326.8,204.4L324.8,204.4L323.2,204.5L323.2,203.1L323.7,202.7L325.8,202.7L327.1,203ZM297.7,204.7L296.8,205.2L295.4,204.7L294,203.6L294.4,202.9L295.5,202.7L296.1,202.8L297.9,203.1L299.2,203.8L299.5,204.7ZM309.7,198.5L311.9,199L312.3,198.5L314.4,198.5L315.8,199.3L316.5,199.2L316.9,200.3L318.3,200.2L318.1,201.2L319.3,201.3L320.5,202.4L319.4,203.7L318.2,203L317,203.1L316.1,203L315.6,203.5L314.6,203.7L314.2,203L313.3,203.4L312,205.6L311.4,205.1L311.4,204.2L309.7,203.6L308.4,203.9L306.8,203.6L305.6,204.2L304.2,203.2L304.6,202.2L307,202.7L308.9,202.9L309.9,202.2L308.9,200.9L309,199.7L307.4,199.2L308.1,198.4ZM789.9,202.2L787.9,203.7L785.6,202.7L785,200.1L786.1,198.7L788.8,197.8L790.3,197.9L791.1,199L790.2,200.4ZM91.6,200.9L91.1,201.5L90.6,201L90.9,200.2L90.7,199L90.9,198.7L91.5,198.2L91.5,197.6L91.7,197.3L91.9,197.3L92.8,197.8L93.2,198.1L93.5,198.5L93.9,199.6L93.8,199.8L92.6,200.5ZM91.4,196.1L90.5,196.3L90.2,195.7L90,195.4L90,195.2L90.3,195L91.2,195.2L91.8,195.7ZM90.1,194.4L89.9,194.8L88.5,194.7L88.8,194.3ZM87.9,194L87.7,194.2L87.5,194.1L86.6,194L86.5,193.3L86.4,193.2L87.3,192.8L87.4,193ZM84,191.9L83.6,192.2L82.9,191.7L83.1,191.5L83.6,191.2L84.2,191.2ZM292.4,189.5L293.2,190.6L295.7,190.3L296.5,191L298.5,192.9L299.9,194.3L300.8,194.3L302.3,194.9L302,195.8L303.9,195.9L305.7,197.2L305.3,197.9L303.5,198.3L301.7,198.5L299.9,198.2L296.1,198.5L298.1,196.8L297.2,196L295.5,195.8L294.7,194.9L294.3,193.1L292.8,193.3L290.5,192.4L289.8,191.8L286.5,191.3L285.7,190.7L286.8,189.9L284.2,189.7L282.1,191.4L281,191.4L280.6,192.2L279.2,192.5L278.1,192.2L279.7,191.2L280.4,190.1L281.7,189.4L283.1,188.8L285.1,188.5L285.8,188.2L288,188.4L290.1,188.4ZM298.4,186.4L297.7,186.6L297.4,184.8L296.5,183.9L297.4,181.9L298.2,182L298.7,184.6ZM815.8,189.4L815.2,192L813.3,189.4L812.4,187L813.2,184L814.7,181.6L816.1,182.6L816.2,184.4ZM299.1,177.6L296.2,178.1L296.2,177L297.5,176.7L299.1,176.8ZM301.2,177.6L300.4,179.8L300,179.4L300.3,177.8L299.3,176.6L299.4,176.2ZM839.5,154.1L840.3,155.2L839.6,157L838.2,156L837.1,156.8L837.1,158.6L835.2,157.7L834.6,156.2L835.3,154.4L836.9,154.7L837.4,153.4ZM586.7,149.4L585.1,150.7L585.4,151.3L585.5,151.5L583,152.8L581.8,152.4L581.1,151.1L582.3,151L582.4,151L582.7,150.2L584.5,150.3ZM559.4,149.3L560.9,150.3L562.8,150.1L564.7,150.3L564.7,150.9L566,150.5L565.8,151.4L562.2,151.7L562.2,151.2L559.1,150.6ZM538.5,141.4L537.8,143.9L538.2,144.8L537.7,146.4L535.8,145.3L534.5,144.9L530.9,143.3L531.2,141.7L534.1,142L536.7,141.7ZM522.6,132.2L524.1,134.4L523.9,138.5L522.8,138.3L521.8,139.3L520.8,138.5L520.6,134.8L520,133L521.4,133.2ZM851.5,144.8L851.7,147.3L852.8,148.8L852.4,151L849.8,152.5L845.5,152.7L843.3,156.2L841.1,155L840.1,152.7L836,153.4L833.6,154.9L830.6,154.9L834.1,157.2L834.3,162.5L833.1,163.8L831.4,162.6L831.1,159.8L829.1,158.9L827.3,156.7L829.4,155.8L830,153.8L831.9,152.2L832.9,150.1L837.5,149.2L840.4,149.8L840.7,144.3L843,145.8L845.3,142.7L846.2,141.5L845.9,137.7L843.8,134.2L843.9,132.3L846.2,131.7L849.7,136L850.8,138.5L850,141.6ZM523.3,129.3L522.6,131.7L521.5,131.1L520.8,129L521.3,127.9L522.8,126.7ZM847.7,123.1L849.8,123.8L850.7,122.5L853.2,125.9L850.1,126.8L849.6,129.8L844.7,127.7L845.1,131.1L842.4,131.1L840.5,128.1L840.4,125.7L842.9,125.5L841.3,121.3L840.6,118.9L845.3,122.1ZM348.1,115.9L349.7,116.3L351.9,116.2L350.4,117.5L349.5,117.7L346.8,116.4L346.5,115.4L347.6,114.4ZM354.6,108.2L353.4,108.2L350.7,107.3L348.9,105.9L349.8,105.6L352.6,106.4L354.7,107.6ZM208.4,110L207,110.4L203.9,109L203.8,108L202.3,106.9L202.4,106.1L200.3,105.5L200.4,103.9L201,103.2L203,103.9L204.2,104.3L206.2,104.6L206.4,105.7L206.7,107.1L208.4,108.3ZM369.2,103.5L366.9,106.1L368.7,105.1L370.1,105.7L369,106.7L370.9,107.6L372.2,106.8L374.3,107.8L373,110L374.8,109.4L374.7,111L375,112.9L373.4,115.6L372.3,115.7L370.9,115.1L372,112.6L371.4,112.3L368,114.9L366.6,114.8L368.7,113.4L366.5,112.6L364,112.8L359.4,112.7L359.2,111.8L361,110.8L360.2,109.9L362.6,108.1L366.3,103.4L368.2,101.7L370.5,100.6L371.6,100.8L370.9,101.6ZM197.2,93.5L199.5,93.3L196.6,96.6L197.1,99L196.1,99L195.6,97.7L195.7,96.3L195.1,95.4L195.6,94.1L196.4,93.2ZM834.7,103.3L840.6,108.6L836.4,107.6L837.8,111.9L842,115L843.2,117.1L840.3,115.3L840.1,117.7L838.2,115.1L836.6,112.2L834.3,108.9L833.4,106.7L830.9,102.7L827.5,99.7L824.8,95.7L826,94.4L824.1,93L824.8,92.6L826.8,94.5L829.7,97.4L831.7,100.3ZM484.3,98.8L480.2,100.5L476.9,100.1L478.9,97L477.9,94L481.1,91.7L482.8,90.4L484.8,90.2L487.1,92L485.8,94L486.2,96.1ZM528.6,89L527.4,91.3L525,89.7L524.6,88.5L527.8,87.5ZM158.2,84.6L155,85.7L154.5,85L155.3,83.6L158.2,82.6L159.8,82.2L161.1,82.4L161.2,83.3ZM493.4,80.3L490.9,83.4L493.2,83L495.6,83L495,85.3L493,87.9L495.3,88.1L497.5,91.8L499,92.3L500.4,95.6L501.1,96.8L503.9,97.4L503.6,99.3L502.4,100.1L503.4,101.7L501.3,103.2L498.2,103.2L494.2,104L493.1,103.4L491.5,104.8L489.4,104.5L487.7,105.6L486.5,105L490,101.9L492.1,101.3L488.4,100.8L487.8,99.6L490.3,98.7L489,97.1L489.5,95.1L492.9,95.4L493.3,93.7L491.7,91.9L489,91.4L488.5,90.6L489.3,89.3L488.6,88.5L487.4,89.8L487.3,87L486.2,85.6L487.1,82.6L488.9,80.3L490.7,80.5ZM137.6,76.7L135.8,77.1L134.9,76.6L134.3,75.8L137,75.3L138.4,75.6ZM329.5,70.4L328,71.8L327.1,71.6L327,70.8L327.1,70.6L328.4,69.7L329.2,69.8ZM324.6,68.8L321.3,70.4L319.8,70.3L319.8,69.6L322,68.3L324.9,68.3ZM135.4,65.9L136.2,66.4L137.8,66.1L138.7,66.9L140.5,67.2L140,67.5L137.7,68.1L136.8,67.5L136.5,67L134.4,67.2L134.2,66.9ZM322,60.8L321.7,62L323.1,61.6L323.9,62.3L325.7,63.2L327.6,64.1L327.2,65.4L328.8,65.1L329.9,66L327.5,66.9L324.6,66.3L324,65L321.2,66.5L317.4,67.9L317.5,66.3L314.5,66.6L317.1,65.2L318.5,63.1L320.6,60.6ZM469.9,58.6L469.2,60.4L471.4,62.2L468.5,64.3L462.2,66.2L460.3,66.7L457.6,66.3L451.8,65.4L454,64.2L449.6,62.9L453.4,62.3L453.4,61.5L449.1,60.9L450.8,59.2L454,58.8L457,60.6L460.4,59.1L462.9,59.9L466.5,58.4ZM343.5,56.8L341.1,56.9L341.3,55.6L342.9,54.1L345,53.8L346.2,54.5L345.6,55.6L345.2,56ZM620.3,132L621.9,134.2L623.1,134.3L624,135.2L622,135.4L622,137.8L621.8,138.9L621,139.6L621.3,141.2L622.5,143.4L624.9,144.1L626.9,145.6L630.5,146.2L634.3,145.4L634.4,144.6L633.6,142.4L633.4,139.2L631.2,138.2L631.5,136L629.8,135.9L629.9,133.3L632.3,134L634.3,133L632.1,131.2L631.1,129.4L629.3,130.2L629.5,132.5L628.3,130.5L628,129.7L628.4,128.4L627.7,127.4L624.7,126.3L623,123.6L621.6,122.8L621.3,121.8L623.7,122.1L623.3,119.9L625.2,119.4L627.4,119.8L627.2,116.9L626.4,115L624,115.1L621.8,114.4L619.4,115.7L617.3,116.4L616.5,118.2L614.3,118.7L612.5,121.8L615.3,124.7L615.4,126.8L618.7,130.4ZM878.3,62.6L878.3,62.6L877,63.8L874.1,63.6L877.6,65.1L881.5,67.3L883.3,68.1L884.8,69.2L885.1,70L880.4,69.4L876.6,71.5L875.1,71.8L873.8,73.7L872.4,75.5L872.9,76.7L867.8,74.8L864.3,77L862.3,76L861.4,77.2L858.1,76.8L859.1,78.6L859,81.4L860.2,82.5L863.3,83.2L866.8,87.4L864.8,87.5L865.9,89.9L867.9,91.2L865.2,92.7L867.1,96L864.3,96.7L865.9,99.7L864.7,102.5L862.3,100.4L858,96.1L851.5,89.6L849.2,85.6L849.6,83.9L848.5,82.6L851.4,81.9L852.1,78.3L853.1,75.4L854.9,73.2L852.7,69.3L850.3,69.5L851.3,71.8L848.8,74.9L843.7,71.4L839,72.4L837.9,77.1L841.3,78.8L837,79.6L833.9,79.9L832.3,77.8L828.5,77.4L827,78.8L819.8,78.3L813.3,79.1L810.5,84.7L806.9,91.5L810.8,91.9L813.2,93.7L815.9,94.4L816.3,92.9L818.9,93.1L824.5,96.3L826.4,98.8L826.6,101.8L828.8,105.4L830.8,110.2L829.9,114.5L830.3,116.6L829,120.2L827.7,123.7L827.1,125.5L824.8,127.3L823.3,127.3L821,125.9L818.9,128.1L819,129.1L818,128.9L817.4,130L817.2,131L818.3,133.2L817.4,133.9L817.2,134.5L816.7,135.4L815.3,135.9L814.6,136.7L815.1,138L814.9,138.4L816.1,138.9L818.1,140.2L821.8,143.9L823.3,145.9L824.7,149.5L824.4,151.2L822.4,151.8L820.9,153.1L818.7,153.3L817.8,151.6L817.4,149.3L815,146.1L816.6,145.6L813.8,142.9L812.4,142.3L812.3,142.9L811.7,143.2L811.4,142.6L810.6,142.3L809.7,141.8L809.9,140.4L810.3,140.1L809.8,139.5L809.8,137.8L809.4,137.3L807.8,137L806.3,136.2L803.2,137.1L802,138.5L799.7,139.4L800.4,137.9L799.4,136.7L800.4,134.7L798.4,133L796.8,134.1L794.9,136.3L794.2,138.3L791.8,138.4L791.2,139.9L793.3,142L795.5,142.5L796.1,143.9L798.5,144.8L800.4,142.5L803.1,143.8L804.7,143.8L805.8,145.5L802.6,146.3L802,148L800.2,149.6L799.7,151.7L803,153.4L805,156.5L807.5,159.3L810,161.7L810.7,164L809.4,164.9L810.5,166.6L812.3,167.5L812.7,170.1L812.8,172.5L811.4,172.8L810.4,176.2L809.4,180.3L807.9,184L805,186.8L802,189.5L799.1,189.8L797.8,191.2L796.7,190.2L795.6,191.7L792.2,193.3L789.6,193.8L789.3,197L787.9,197.2L786.8,195L787.2,193.8L783.4,192.8L782.3,193.3L779.3,195.9L777.6,198.9L777.4,201L780,204.3L783,208.3L785.7,210.3L787.7,212.8L789.6,218.5L789.8,223.9L787.8,226L785,228L783,230.5L779.9,233.4L778.8,231.4L779.4,229.3L777.3,227.6L775,227.1L773.8,225.5L772.1,222.3L769.6,220.9L767.3,221L767.5,218.5L765.1,218.5L765.3,221.9L764.3,226.5L763.6,229.2L764,231.4L765.7,231.5L767,234.4L767.6,237L769.2,238.8L770.9,239.2L772.3,240.8L773,241.1L774.6,242.9L775.8,245L776.1,247.1L775.8,248.5L776.1,249.5L776.4,251.4L777.3,252.2L778.4,255L778.4,256L776.5,256.2L773.9,253.9L770.7,251.5L770.4,249.9L768.8,247.8L768.3,245.3L767.3,243.6L767.5,241.3L766.8,240L765.7,238.8L765.2,237.3L763.6,235.6L762.2,234.1L761.9,235.9L761.3,234.2L761.5,232.3L762,229.3L761.6,227L762.2,224.6L761.1,222.8L761,219.4L759.8,217.8L758.5,214.1L757.5,210.2L756.1,207.6L754.5,209.2L751.8,211.4L750.3,211.1L748.6,210.4L749,206.5L748,203.6L745.5,200.1L745.6,198.9L744,198.5L741.8,196L740.8,194.4L740.4,192.8L739.6,191.3L738.2,189.5L735.8,189.4L736.3,190.7L735.7,192.4L734.5,191.8L734.2,192.3L733.4,192L732.4,191.7L732.2,192.8L730.4,192.8L727.3,193.4L727.8,195.8L726.6,197.6L723.2,199.7L720.7,203.4L719,205.3L716.6,207.4L716.7,208.8L715.5,209.5L713.2,210.7L712,210.8L711.5,213.2L712.4,217.2L712.8,219.8L711.9,222.7L712.2,228L710.9,228.1L709.8,230.5L710.7,231.5L708.3,232.4L707.5,234.5L706.5,235.4L703.8,232.5L702.3,228.2L701.1,225L700.1,223.6L698.5,220.6L697.5,216.7L696.9,214.8L694.1,210.5L692.4,204.5L691.1,200.6L690.7,196.8L689.8,193.9L686.3,195.7L684.4,195.4L680.5,191.6L681.6,190.5L680.7,189.3L677.3,186.6L675.3,185.8L674.2,183.6L671.9,181.2L667.2,181.8L663,181.9L659.4,182.3L654.4,181.4L651.5,180.7L648.5,180.3L646.9,176.4L645.6,175.9L643.7,176.4L641.3,177.9L638,176.9L635.1,174.5L632.6,173.6L630.5,170.7L628.1,166.5L626.8,167L625,166L624.2,167.2L622.7,167.1L623.4,168.4L623.2,169.2L624.3,171.5L625.6,174.2L627,174.9L627.5,176L629.5,177.3L629.7,178.6L629.6,179.6L630,180.7L630.9,181.5L631.3,182.6L631.8,183.3L631.4,181.1L631.9,179.4L632.6,179.1L633.5,180.1L633.7,181.9L633.3,183.7L634,184.9L634.4,184.8L634.6,185.6L636.6,185.1L638.7,185.2L640.3,185.3L641.9,183.2L643.6,181.2L645,179.3L645.6,178.2L645.9,178.5L645.9,179.8L645.6,180.3L646.2,182.8L647.6,184.9L649.2,186L651.2,186.5L652.8,187L654.1,188.8L655,189.8L655.9,190.2L656,190.9L655.3,192.8L654.9,193.6L653.9,194.6L653.2,196.8L652,196.6L651.5,197.3L651.2,198.9L651.7,201L651.5,201.4L650.3,201.4L648.8,202.5L648.6,204L648.1,204.7L646.5,204.7L645.5,205.4L645.6,206.7L644.4,207.6L642.9,207.3L641.2,208.3L640,208.5L638.2,209.3L637.8,210.7L637.8,211.8L635.2,213.1L631.1,214.5L628.8,216.7L627.7,216.9L626.9,216.7L625.4,218L623.7,218.6L621.5,218.7L620.9,218.9L620.3,219.7L619.6,219.9L619.3,220.7L618,220.7L617.1,221.1L615.3,220.9L614.5,219.1L614.5,217.4L614,216.5L613.4,214.2L612.6,212.9L613.1,212.8L612.7,211.4L613,210.8L612.8,209.4L612.4,208.1L611.6,207.2L611.3,205.9L609.9,204.8L608.3,202.2L607.4,199.7L605.5,197.6L604.2,197L602.3,194.1L601.9,191.9L601.8,190.1L600.1,186.6L598.8,185.4L597.3,184.8L596.3,183L596.4,182.3L595.6,180.7L594.8,180L593.6,177.7L591.8,175.2L590.3,173L589.1,173L589.3,171.3L589.3,170.2L589.5,169L589.4,168.5L588.8,169.8L588.5,172.2L587.9,173.8L587.3,174.3L586.4,173.3L585.1,171.9L582.9,167.5L582.7,167.7L584,171L585.8,174.2L588.2,179L589.2,180.7L590.2,182.5L592.8,185.9L592.3,186.4L592.5,188.5L595.7,191.2L596.2,191.9L597.3,194.9L596.7,195.5L597.3,198.7L598.5,202.4L599.5,203.2L601,204.3L602.8,207.9L603.6,210.7L605.2,212.3L608.9,215.2L610.5,216.9L612,218.7L612.9,219.8L614.2,220.7L614.9,221.7L614.8,223L613.4,223.7L614.5,224.6L615.4,225.1L616,226.4L617.2,227.7L618.6,227.7L621,226.9L623.9,226.6L626.2,225.6L627.5,225.4L628.4,224.8L629.9,224.7L630.8,224.7L632,224.2L633.4,223.9L634.6,222.8L635.6,222.8L635.7,223.7L635.5,225.5L635.6,227.1L635.1,228.2L634.5,231.6L633.3,235L631.8,239L629.6,243.5L627.4,247L624.3,251.2L621.7,253.7L617.7,256.7L615.2,259.1L612.3,262.8L611.7,264.5L611.1,265.2L609.2,266.4L608.5,267.7L607.5,268L607.1,270.1L606.2,271.4L605.7,273.4L604.6,274.4L603.3,278.3L603.4,280L605.1,281.1L605.2,281.9L604.4,283.8L604.5,284.8L604.3,286.2L605.2,288.2L606.2,291.2L607.1,291.9L607.5,293.3L607.3,296.4L607.5,299.1L607.4,303.9L607.8,305.4L606.9,307.7L605.8,309.8L604,311.7L601.5,312.9L598.5,314.4L595.3,317.7L594.3,318.3L592.3,320.5L591.2,321.2L590.9,323.4L592,325.8L592.4,327.6L592.3,328.6L592.8,328.4L592.5,331.4L592,332.9L592.6,333.4L592.1,334.7L591,335.8L588.7,336.9L585.5,338.6L584.3,339.7L584.4,341L585.1,341.2L584.7,342.9L583.9,345.1L583.4,347.7L582.6,349.1L580.8,350.7L580.2,351.1L579,352.7L578.2,354.3L576.6,356.6L573.4,359.8L571.5,361.6L569.5,363L566.8,364.3L565.5,364.4L565.1,365.3L563.6,364.8L562.3,365.4L559.6,364.8L558,365.2L557,365L554.3,366.2L552.1,366.7L550.5,367.9L549.3,368L548.3,366.9L547.5,366.8L546.5,365.4L546.3,365.9L546.1,365L546.2,363.2L545.5,361.1L546.3,360.6L546.3,358.2L544.8,355.3L543.7,352.6L543.6,352.6L542,348.6L540.1,346.2L539.2,343.9L538.7,340.9L538.2,338.7L537.5,333.9L537.5,330.2L537.2,328.5L536.2,327.2L534.9,324.6L533.6,320.9L533.1,318.9L531,315.9L530.9,313.5L530.7,311.6L531.1,308.9L532,306L532.2,304.7L533.1,301.9L533.8,300.6L535.3,298.6L536.2,297.2L536.5,294.9L536.4,293.2L535.6,292.1L534.9,290.2L534.3,288.3L534.4,287.7L535.2,286.5L534.5,283.5L533.9,281.4L532.6,279.5L532.9,278.8L532.5,277.9L531.8,275.6L529.6,272.3L526.9,269.2L525.1,266.6L523.5,263.4L523.6,262.4L524.2,261.4L524.8,259.2L525.4,256.9L524.8,256.4L525.8,252.9L526.1,250.5L525.1,248.5L523.9,247.9L523.3,246.6L522.7,246.1L522.7,245.3L519.9,246.4L518.9,246.2L517.9,246.9L515.7,246.8L514.3,244.9L513.4,242.7L511.5,240.6L509.5,240.7L507.2,240.7L505,241L502.8,241.7L498.6,243.5L497.2,244.5L494.8,245.4L492.4,244.6L491.2,244.6L489.3,244L487.6,244L484.4,244.6L482.6,245.5L479.9,246.6L479.4,246.5L478.7,246.5L476,245.1L473.6,242.7L471.3,241L469.5,239L468.8,238.8L466.9,237.6L465.5,235.9L465.1,234.8L464.7,232.5L463.6,230.7L462.6,229.4L461.9,229L461.3,228.4L461,227.1L460.6,226.4L459.8,225.9L458.4,224.6L457.3,224.4L456.7,223.5L456.7,223L455.9,222.4L455.8,221.7L455.4,219.3L455.7,218L454.7,215.5L453.4,214.4L454.6,213.9L455.9,211.7L456.6,210.1L456.4,208.4L457.1,206.9L457.5,204L457.3,200.9L457,199.4L457.3,197.8L456.7,196.3L455.4,195L455.5,193.7L455.7,192.2L456.7,191.4L457.6,189.8L457.5,188.7L458.4,186.5L460,184.5L460.8,184L461.6,182.2L461.7,180.6L462.7,178.7L464.4,177.5L466.2,174.3L467.5,173.1L470,172.8L472,170.6L473.3,169.8L475.5,167.2L475,163.3L476,160.7L476.4,159L478.1,156.9L480.7,155.5L482.6,154.2L484.3,151L485.1,149.1L487,149.1L488.5,150.4L490.9,150.2L493.5,150.9L494.6,150.9L497,149.2L499.7,148.7L501.3,147.4L503.7,146.5L507.9,145.9L512,145.7L513.3,146.1L515.6,144.9L518.3,144.9L519.3,145.6L521,145.4L523.7,144.2L525.5,144.5L525.4,146.1L527.5,145L527.7,145.6L526.5,147.1L526.5,148.5L527.4,149.3L527.2,152L525.6,153.5L526.1,155.2L527.4,155.3L528.1,156.8L529.1,157.2L532.1,158.3L533.1,158L535.3,158.6L538.7,159.9L540,162.7L542.3,163.3L546,164.6L548.8,166.2L550,165.4L551.1,163.9L550.4,161.5L551.1,160L552.9,158.6L554.6,158.2L558,158.8L559,160.2L559.9,160.2L560.8,160.7L563.3,161.1L564,162.1L567.4,162.1L569.9,162.9L572.5,163.8L573.7,164.3L575.6,163.3L576.6,162.4L578.8,162.2L580.7,162.5L581.5,164.1L582,163.1L584.1,163.8L586.1,164L587.3,163.2L587.9,162.2L587.7,162L588.3,160.5L588.6,158.2L588.8,157.4L588.9,157.4L589.6,154.8L590.6,152.7L590.6,152.5L590.1,150.2L590.6,148.9L589.5,147.5L590.3,146.3L588.9,146.6L586.7,145.9L585.2,147.7L581.4,148L579.2,146.3L576.5,146.2L576,147.5L574.3,147.9L571.8,146.2L569.1,146.3L567.3,143.2L565.3,141.5L566.3,139.1L564.6,137.6L567.1,134.7L570.9,134.5L571.7,132.2L576.4,132.6L579.1,130.6L581.8,129.7L585.8,129.7L590.4,131.8L594.1,133L596.9,132.6L599,132.8L601.7,131.2L601.8,129.9L600.9,127.8L599.3,126.7L597.9,126.3L596.9,125.4L593.4,122.8L590.5,121.7L588.1,119.9L589.8,119.4L591.4,116.8L589.9,115.6L593.2,114.4L593,113.7L590.9,114.2L589.1,114.5L587.7,115.4L585.4,115.6L583.6,116.7L584,118.6L585.3,119.4L587.7,119.2L587.4,120.3L584.8,120.8L581.8,122.6L580.4,121.9L580.7,120.5L577.9,119.6L578.3,119L580.5,118L579.7,117.3L575.8,116.6L575.5,115.4L573.4,115.8L572.7,117.5L571.1,119.7L571.3,120.5L570.2,121.2L569.4,120.9L569.2,124.6L568,125.8L567.4,128L568.4,129.8L568.8,131L571,131.9L570.6,132.7L567.7,132.9L566.8,133.8L564.9,135.5L564,134.1L564,133.4L562.5,133.3L561.2,133L558.3,133.8L560.1,135.6L558.9,136.1L557.5,136.1L556.1,134.5L555.7,135.2L556.4,137L557.7,138.5L556.9,139.1L558.3,140.6L559.6,141.5L559.8,143.2L557.5,142.4L558.3,144L556.8,144.3L557.9,147L556.2,147.1L554.1,145.7L553,143.2L552.4,141.2L551.3,139.8L550,138L549.7,137.1L549.3,136.9L549.2,136.2L547.8,135.2L547.4,133.7L547.5,131.6L547.8,130.7L547.3,130.2L546.8,129.9L546,128.9L544.9,128.3L542.6,127.2L541.1,126.1L538.8,125.2L536.7,122.9L537.1,122.7L535.9,121.4L535.8,120.4L534.3,119.9L533.6,121.2L532.8,120.2L532.8,119.1L532.9,119.1L533.4,118.8L531.5,118.4L529.6,119.5L529.8,121L529.6,121.8L530.4,123.4L532.8,124.9L534.1,127.5L537,129.9L538.9,129.9L539.5,130.6L538.9,131.2L541.1,132.3L543,133.3L545.2,134.9L545.5,135.4L545.1,136.5L543.7,135.1L541.5,134.6L540.6,136.6L542.4,137.7L542.2,139.4L541.2,139.5L540,142.2L539,142.4L538.9,141.5L539.4,139.8L539.9,139.2L538.8,137.4L538,135.8L536.9,135.4L536.1,134.1L534.5,133.5L533.4,132.3L531.6,132.1L529.6,130.7L527.3,128.7L525.5,126.9L524.7,123.9L523.5,123.6L521.5,122.5L520.4,123L519,124.4L518,124.6L515.9,126.3L511,125.5L507.5,126.5L507.3,128.3L507.4,130.1L505.1,132.2L502,132.8L501.8,133.9L500.3,135.6L499.3,138.1L500.3,139.9L498.8,141.2L498.3,143.2L496.4,143.9L494.6,146.3L491.5,146.3L489.1,146.2L487.5,147.3L486.5,148.5L485.3,148.2L484.4,147.2L483.7,145.4L481.4,144.9L480.4,145.7L479.1,145.3L477.8,145.6L478.2,143.2L478.1,141.3L477,141L476.4,139.9L476.7,137.8L477.7,136.7L477.9,135.5L478.5,133.6L478.5,132.3L478,131.2L477.9,130.2L478.1,128L477.2,126.6L480.7,124.4L483.6,125L486.9,125L489.5,125.5L491.5,125.3L495.4,125.4L496.7,123.6L497.1,117.5L494.7,114.3L493,112.8L489.4,111.6L489.2,109.5L492.2,108.8L496.2,109.6L495.5,106.2L497.7,107.5L503.1,105.1L503.8,102.7L505.8,102.1L507.7,101.5L508.9,100.7L510.8,96.3L513.9,95.1L515.8,95.2L516.2,94.6L518.1,94.4L518.6,95L520.1,93.6L519.5,92.5L519.3,90.8L518.3,89.2L518.2,86.3L518.5,85.5L519.1,84.6L521,84.5L521.8,83.7L523.5,82.9L523.5,84.3L522.9,85.3L523.3,86.1L524.5,86.5L524,87.6L523.3,87.3L521.8,89.4L522.5,90.8L522.6,91.9L524.9,92.6L525,93.6L527.3,93.1L528.5,92.3L531.1,93.4L532.3,94.4L533.8,93.5L537.2,92.2L540,91.2L542.3,91.7L542.5,92.4L544.7,92.4L545.1,91.1L548.2,90.2L547.4,87.7L547.2,85.6L548.1,83.8L550.1,82.8L552.1,84.9L553.9,84.9L554.1,82.7L554.1,81L553.3,81.3L551.8,80.3L551.4,78.7L554,77.9L556.7,77.5L559.2,78L561.4,77.9L563.7,76.3L561.2,75L557.2,75.2L553.6,76.2L550.1,76.8L548.6,75.3L546.4,74.4L546.5,71.6L545.1,69.1L545.9,67.5L547.6,65.8L552,62.8L553.3,62.3L552.9,61.1L549.8,59.8L546.3,60.6L544.6,62.5L545.1,64.2L542.1,66.4L538.2,68.7L537.1,72.6L538.8,74.6L541.1,76.2L539.4,79.4L537.2,80L536.8,84.8L535.7,87.5L533,87.3L531.9,89.6L529.3,89.7L528.4,86.9L526.3,83.7L524.3,79.6L522.7,77.9L518.6,81.2L515.6,81.9L512.5,80.4L511.6,77.4L510.8,70.9L512.7,69.1L518.2,66.8L522.2,64L525.8,60.2L530.3,55L533.5,53L538.6,49.8L542.9,48.6L546.2,48.8L548.9,46.6L552.5,46.7L556,46.2L562.7,48.1L560.2,48.8L562.8,50.4L564.7,49.5L568.4,51.1L574.1,51.7L582.6,54.7L584.5,56L585.1,57.7L583.2,59.1L580,59.9L570.2,57.8L568.8,58.2L572.6,60.1L573.8,64.2L576.7,65L578.5,65.7L578.5,64.4L576.9,63.2L578,62.2L583.5,63.9L585.1,63.2L583.2,61.2L587.4,58.6L589.3,58.7L591.5,59.7L592.2,57.8L590,56.2L590.5,54.7L588.5,53L594.5,53.9L596.1,55.3L593.6,55.7L594.1,57.2L596,58.1L599,57.5L599,55.8L602.9,54.5L609.2,52.3L610.7,52.4L609.3,54L612,54.3L613.1,53.4L616.9,53.3L619.5,52.2L622.4,53.8L624,52L621.2,50.5L621.9,49.7L628.2,50.5L631.4,51.3L640.2,54.3L640.9,52.9L638.1,51.5L637.8,51L635.3,50.7L635.3,49.5L633.3,47.4L632.8,46.6L635.3,44.3L635.4,42L636.6,41.5L642.1,42.2L643.3,43.6L642.6,45.6L644.2,46.5L645.8,48.3L647.2,51.8L650.3,53.4L650.3,55.2L648.1,59L650.7,59.4L651,58.4L653,57.7L652.9,56.4L654,55.2L652,53.7L652.1,51.9L649.8,51.7L648.5,50.2L648.7,47.6L645,45.5L647.6,43.8L646.1,42L647.1,42L648.9,43.4L649.5,45.8L651.9,46.3L649.9,44.5L652.7,43.5L656.7,43.3L661.2,44.8L658.1,42.7L656.3,40L659.3,39.5L664.1,39.6L668,39.3L665.6,38L666.7,36.4L668.8,36.3L671.6,35.1L676.4,34.8L676.5,34.1L681.3,33.9L683.3,34.4L686.4,33.1L689.9,33.2L689.5,32.2L690.4,31.2L693.9,30.2L697.8,30.9L695.8,31.5L700.4,31.9L702,33.1L703.2,32.5L708.7,32.5L714.1,33.7L716.5,34.6L717.3,35.8L715.8,36.6L712,37.9L711.2,38.7L713.9,39L717.3,39.6L718.6,39.2L721.1,40.8L721.3,40.1L724.1,39.7L730.7,40.1L732.3,41.3L740.8,41.7L739,39.8L743.6,40.2L746.7,40.2L751.1,41.5L753.6,43.1L753.5,44.2L757.9,46.2L762.1,47.2L761.4,44.5L765.7,45.7L768.4,45L773,45.8L773.7,45.1L777.3,45.4L773.4,43.1L774.8,42L794.4,43.6L797.8,45.1L805.2,47.1L812.7,46.6L817.1,47L820,48.1L822,50L825.3,50.7L827.4,50.2L830.9,50.1L835.3,50.7L838.8,50.4L845.1,52.7L846.6,51.9L843,50.2L842.4,49L849.7,49.8L853.7,49.6L861.1,50.8L865.4,52L878.3,62.6ZM134.6,52L134.6,52L134.6,52L137.1,54L139.3,56.6L137.1,58.3L137.8,59L139.6,57L144.7,57.4L145.9,59.9L142.5,61.1L138.8,61.4L135.7,64L134.3,64.6L132.4,64.5L131.8,63.6L129.9,62.8L130.8,61.6L129.2,61.2L126.4,61.5L126.4,60.6L128,59.6L124.8,60.2L124.2,61.5L121.7,62.6L121.7,62.6L134.6,52ZM306.1,51.6L304.2,52.5L302,51.7L300.2,52L298.2,50.8L300.6,50L302.8,48.9L304.4,49.6L305.3,50.1L305.5,50.6ZM858,46.2L859.1,47.1L857.1,47.3L855.7,46.4L856.8,45.4L858,46.2ZM143.2,45.4L143.2,45.4L143.2,45.4L142,46.2L143.2,45.4ZM143.2,45.4L143.6,45.3L145.3,45.3L147.2,46L146.5,46.4L143.7,47L140.9,47.1ZM317.1,50.6L315.4,53.3L319.4,51.2L320.8,52.9L319,54.9L319.9,56.7L323.2,54.7L326,52.5L327.8,49.6L330.6,49.8L333.3,50.2L335.3,51.5L334.7,52.8L332.4,54.2L333,55.6L332,56.9L326.9,58.8L323.8,59.2L322.1,58.4L320.7,59.7L317.4,62L316.1,63.2L312.6,65L309.5,65.2L307.2,66.4L306,68.2L303.3,68.5L299.4,70.7L295.3,73.9L293.2,76.1L291.3,79.4L294.2,79.9L293.8,82.5L293.8,84.7L297.2,84.1L300.7,85.4L302.4,86.5L303.4,87.8L305.8,88.6L307.7,89.9L311.3,90L313.7,90.3L312.2,92.8L311.7,95.8L312,99.1L314.3,101.9L316.5,100.9L318.9,97.9L319.6,93.2L318.6,91.7L322.8,90.3L326.2,88.3L328.3,86.3L328.9,84.4L328.5,81.9L326.7,79.8L330.7,76.8L330.9,74.3L332.2,69.9L334,69.3L337.3,70L339.4,70.3L341.5,69.6L343.1,70.5L345.1,72.1L345.2,73.2L349,73.4L348,75.8L347.3,79.4L349.1,79.8L350,81.5L353.9,79.9L357.2,76.8L359.1,75.5L359.9,78L361.4,81.6L362.7,85L361.2,86.9L363.6,88.5L365.1,90.1L368.5,90.9L369.7,91.8L369.9,94.3L371.5,94.7L372.1,95.8L371.4,99.1L369.4,100.2L367.4,101.3L363.3,102.3L359.7,104.8L355.6,105.3L350.8,104.6L347.3,104.6L344.8,104.8L342.2,107L338.8,108.3L334.1,112.3L330.6,115.1L332.7,114.6L337.7,110.6L343.5,108.1L347.1,107.8L348.7,109.3L345.9,111.3L345.7,114.6L345.9,116.8L348.6,118.4L352.7,117.9L355.9,114.5L355.5,116.7L356.8,117.8L353.3,119.8L347.6,121.6L344.8,122.9L341.6,125.1L339.8,124.8L340.4,122.2L345.2,119.7L341.4,119.8L338.6,120.2L338.7,121.2L335.8,122.7L333,123.7L330.2,124.6L328.2,126.6L327.8,127.1L327.3,128.8L327.7,130.4L328.7,130.5L328.8,129.4L329.3,130L328.9,130.9L327.1,131.4L325.9,131.4L324,131.9L322.9,132L321.4,132.2L319.1,133.1L322.9,132.5L323.5,133.1L319.8,134L318.2,134L318.4,133.6L317.4,134.5L318.1,134.6L317,136.9L314.6,139.2L314.6,138.4L314.1,138.3L313.5,137.5L313.6,139.2L314,139.7L313.8,140.9L312.7,142.1L310.7,144.6L310.5,144.4L311.8,142.3L310.8,141.2L311.2,138.6L310.4,139.9L310.4,141.9L308.9,141.4L310.3,142.4L309.7,145.3L310.4,145.6L310.4,146.6L310,149.7L307.9,152L305.1,153L303,154.8L301.7,155L300.2,156.1L299.6,157.2L296.3,159.2L294.6,160.7L293,162.5L292.1,164.7L292.1,166.9L292.4,169.5L293.2,171.7L292.9,173.1L293.5,176.7L293,178.8L292.7,180L291.7,181.9L290.9,182.3L289.7,181.9L289.5,180.6L288.6,179.9L287.7,177.2L287,174.8L286.8,173.6L287.8,171.5L287.4,169.8L285.9,167.2L285,166.7L282.1,168.1L281.7,168L280.8,166.5L279.4,165.7L276.4,166.1L274.2,165.8L272.2,166L271,166.5L271.3,167.3L271,168.6L271.4,169.2L270.8,169.6L270,169.2L268.9,169.7L267,169.6L265.5,168L263.2,168.4L261.5,167.7L259.8,167.9L257.5,168.6L254.6,170.9L251.8,172.3L250,173.8L249.1,175.2L248.7,177.3L248.5,178.8L248.7,179.9L248.7,179.9L248.7,179.9L247.2,182.6L246.3,184.8L245.3,189L244.8,190.5L244.9,192.2L245.5,193.7L245.6,196.1L247,198.4L247.3,200.2L248.1,201.7L250.8,202.6L251.7,203.9L254.1,203L256.1,202.7L258.2,202.1L259.9,201.6L261.8,200.3L262.7,198.5L263.3,195.9L263.8,195L265.7,194.2L268.6,193.5L270.9,193.6L272.5,193.3L273.1,194L272.8,195.5L271.1,197.3L270.2,199.2L270.6,199.7L270,201.1L269,203.5L268.5,202.7L267.9,202.8L267.9,203.2L268.4,203.2L268.2,204.1L267.6,205.4L267.8,205.9L267.4,207L267.5,207.3L267,208.9L266.4,209.7L265.9,209.8L265.3,210.9L266.1,211.4L266.3,211L267.1,211.4L267.3,211.5L268,210.9L268.7,210.9L268.9,211.1L269.4,211L270.6,211.3L271.8,211.2L272.7,210.8L273,210.5L273.9,210.7L274.5,210.9L275.2,210.8L275.7,210.5L276.9,211L277.3,211L278,211.6L278.7,212.3L279.6,212.8L280.2,213.6L280,213.9L279.8,214.6L279.9,215.7L279.2,216.8L278.8,218L278.6,219.4L278.7,220.2L278.6,221.6L278.2,221.9L277.9,223.2L278,224L277.4,224.8L277.4,225.7L277.8,226.2L278.3,227.9L279.3,229.1L280.5,230.4L281.3,231.5L281.2,232.2L282.3,232.3L282.6,232.1L283.3,232.8L284.6,232.6L285.8,231.8L287.4,231.2L288.4,230.3L289.8,230.5L289.7,230.8L291.2,230.9L292.3,231.4L293.2,232.3L294.1,233.2L295.5,233.3L297.6,231.1L298.7,230.8L298.8,229.8L299.4,227.2L301.1,225.7L302.7,225.7L303,225L305.1,225.3L307.2,223.7L308.3,223L309.7,221.5L310.6,221.7L311.3,222.6L310.7,223.6L310.6,224.3L309,224.7L309.8,226.1L309.6,227.7L308.4,229.5L309.2,232L310.4,231.8L311.1,229.5L310.3,228.4L310.4,226.1L313.7,224.8L313.5,223.4L314.5,222.4L315.3,224.6L317.1,224.6L318.8,226.3L318.8,227.4L321.2,227.4L324,227.1L325.5,228.5L327.5,228.8L329,227.9L329.1,227.1L332.4,226.9L335.6,226.9L333.3,227.8L334.1,229.2L336.2,229.5L338.2,231L338.5,233.5L339.9,233.4L340.9,234.1L342.6,235.3L344.2,237.3L344.2,238.9L345.2,239L346.6,240.5L347.6,241.5L350.8,242.2L351.1,241.6L353.3,241.4L356.1,242.2L357,242.5L358.9,243.3L361.7,245.9L362.1,247.2L363,247L363.7,248.7L365.1,254.1L366.5,254.6L366.6,256.8L364.6,259.3L365.4,260.2L370.1,260.7L370.2,263.8L372.3,261.8L375.6,262.9L380.1,264.8L381.4,266.6L381,268.3L384.1,267.4L389.3,269L393.3,268.9L397.2,271.4L400.7,274.9L402.8,275.8L405,275.9L406,276.9L407,280.8L407.5,282.7L406.5,287.8L405.2,289.8L401.6,294.1L400,297.6L398.2,300.3L397.5,300.4L396.9,302.7L397.3,308.5L396.9,313.2L396.7,315.3L395.9,316.5L395.7,320.7L393.3,324.7L393.1,327.9L391.1,329.3L390.6,331.1L387.8,331.1L383.8,332.3L382.1,333.7L379.3,334.6L376.4,337.1L374.6,340.2L374.4,342.5L375,344.2L374.9,347.4L374.5,348.9L372.9,350.6L370.8,356.1L368.9,358.5L367.3,360L366.6,363L365.2,364.7L364.4,366.7L361.9,368.4L359.9,367.8L358.6,368.1L356.1,366.8L354.4,366.9L352.5,365.2L352.6,366.8L356.3,369.4L356.3,371.6L358.1,372.9L358.3,374.5L356.6,378.4L353.3,380.1L348.4,380.7L345.6,380.4L346.6,382.3L346.5,384.6L347.3,386.1L346.1,387.2L343.7,387.6L341.1,386.5L340.3,387.3L341.4,390.4L343.3,391.3L344.4,390.3L345.5,391.9L343.5,392.9L342,394.8L342.4,397.9L342.3,399.5L340,399.5L338.6,401.1L338.5,403.3L341.5,405.6L343.9,406.2L343.9,408.9L341.6,410.6L341.2,414.1L339.4,415.3L338.9,416.7L340.7,419.8L342.8,421.5L341.8,421.3L339.7,421.3L338.8,422L337.1,423.1L337.8,425.8L336.8,425.9L333.9,425L330.5,422.9L327,421.2L325.6,419.3L325.6,417.6L323.8,415.6L321.7,410.5L321.7,407.6L323.5,405.3L319.6,404.4L321,401.7L320.3,396.6L323.3,397.7L322.8,391.4L320.9,390.6L321.2,394.4L319.6,394L319.1,389.6L318.4,383.9L319,381.8L317.6,378.7L316.5,375.2L317.6,375.1L317.9,370.1L318.6,365.2L318.8,360.5L317.3,355.9L317.6,353.3L316.6,349.5L317.5,345.7L317,339.6L316.9,333.2L316.8,326.2L316,321.1L315,316.8L312.2,315L311.8,313.7L306.3,310.6L301.2,307.2L299,305.3L297.7,302.7L298.1,301.9L295.5,297.8L292.5,292.1L289.6,285.9L288.4,284.5L287.5,282.2L285.3,280.2L283.4,279L284.2,277.6L282.8,274.6L283.5,272.5L285.6,270.5L287,268.2L286.4,266.9L285.4,268.3L283.8,266.9L284.3,266.1L283.8,263.3L284.8,262.8L285.3,260.9L286.3,258.9L286.1,257.6L287.6,257L289.4,255.7L289,254.8L290,254.5L289.9,253L290.6,251.9L291.9,251.7L293.1,249.7L294.1,248.1L293.2,247.4L293.7,245.6L293.2,242.7L293.8,241.9L293.5,239.3L292.5,237.7L291.6,236.8L291.1,235.1L291.8,234.3L291.2,234.1L290.7,233.1L289.5,232.2L288.3,232.4L287.7,233.5L286.6,234.2L286,234.3L285.7,235L286.9,236.7L286.1,237.1L285.7,237.5L284.5,237.7L284.1,235.8L283.7,236.4L282.9,236.2L282.4,234.9L281.3,234.7L280.6,234.4L279.5,234.4L279.4,235L279.1,234.6L277.7,233.9L277.2,233.2L277.5,232.7L277.5,232L276.8,231.3L275.8,230.7L274.9,230.3L274.8,229.4L274.1,228.8L274.2,229.7L273.6,230.5L273.1,229.6L272.2,229.3L271.9,228.7L272,227.7L272.4,226.8L271.7,226.3L272.4,225.7L271.5,224.7L270.4,223.5L269.9,222.5L268.9,221.5L267.6,220.1L268,219.6L268.4,220.1L268.6,219.9L268.2,218.9L267.5,218.6L267.1,219.3L265.6,219.3L264.6,219L263.6,218.4L262.2,218.2L261.5,217.5L260.2,217L258.5,216.9L257.4,216.3L256.1,215L253.5,211.7L252.2,210.7L250.2,209.9L248.7,210.1L246.4,211.3L245,211.6L243.3,210.8L241.4,210.2L239.1,208.8L237.2,208.3L234.4,206.9L232.4,205.4L231.9,204.6L230.4,204.4L227.9,203.4L227,202L224.5,200.2L223.5,198.3L223.1,196.7L224,196.4L223.9,195.6L224.7,194.8L224.9,193.7L224.3,192.3L224.3,191L223.7,189.5L222,186.4L219.9,184L219.1,182L217.2,180.8L216.9,180L217.7,178.1L216.6,177.3L215.4,175.8L215.3,173.7L214,173.4L212.9,171.8L212.2,170.2L212.3,169.3L211.6,166.9L211.4,164.5L211.8,163.4L210.3,162.1L209.4,162.3L208.2,161.4L207.4,162.7L207.4,164.2L206.9,166.5L207.5,167.8L208.8,169.9L209,170.6L209.3,170.9L209.4,171.9L209.8,171.9L209.8,173.9L210.4,174.7L210.7,175.8L211.9,177.4L212,180.3L212.5,181.6L212.9,183.1L212.7,184.7L213.9,184.8L214.6,186.3L215.3,187.6L215.1,188.2L213.8,189.3L213.3,189.3L213,187.4L211.7,185.7L210.1,184.2L209,183.4L209.6,181.1L209.6,179.4L208.6,178.4L207.2,177.1L206.8,177.5L206.3,176.6L204.9,175.9L203.9,174.1L204.1,173.9L205.1,174L206.4,172.9L206.9,171.5L205.5,169.2L204.2,168.4L203.9,166.4L203.5,164.4L203.1,161.9L203,159.1L203.1,157.5L202,155.7L201,155.4L201,154.5L199.6,154.3L199,153.5L196.8,153.2L196.3,152.7L196.6,151L195.3,147.8L194.9,143.5L195.3,142.8L194.6,141.8L193.8,139.2L194.5,136.7L193.9,135L195.6,132.4L196.7,129.8L197,127.4L199.4,124.6L202.7,119L204.4,114.9L205,112.4L205.1,111L205.7,110.4L208.6,111.4L208.3,114.2L209.3,113.4L210.3,111L210.8,108.5L210.5,108.5L207.6,105.5L206.7,104.3L203.2,103L203.6,100.4L205,98.6L202.9,97.3L204,94.9L202.7,92.8L203.7,91.3L203.2,90.2L201.8,89.3L203,86.8L201.8,84.4L202.6,81.7L200.6,81.5L197.2,81.5L195.2,80.7L193,77.7L191.3,77.2L188.4,76.2L185.1,76.4L181.9,75.1L180.4,73.9L177.5,74.5L176.2,76.5L174.8,76.6L171.8,77.2L169,78.2L166,78.8L167.2,77.1L170.7,74.4L173.8,73.5L173.8,72.8L169.6,74.4L166.4,76.2L161.5,78.2L161.9,79.6L158,81.7L154.5,82.9L151.5,83.7L149.9,85L145.1,86.5L143.2,87.9L139.5,89.1L138.2,88.9L135.4,89.7L132.2,90.7L129.5,91.6L124.9,92.5L125,92L128.6,90.6L131.6,89.7L135.4,88.1L138.5,87.8L140.6,86.6L145.2,84.9L146.2,84.3L148.8,83.3L151.1,81.1L153.7,79.5L150.4,80.3L150.1,79.8L148,80.9L147.9,79.4L146.3,80.4L146.8,79L143.5,80.2L142.2,80.2L143.6,78.5L145,77.4L144.5,76.4L141.1,77L140.6,75.7L139.7,75L141.3,73.4L140.8,72.2L143.3,70.6L146.6,69.1L148.8,67.6L150.8,67.4L151.8,67.9L154.9,66.5L156.2,66.8L158.7,65.9L159.5,64.7L158.9,64.2L161.5,63.1L160.2,63.2L157.3,63.8L156.1,64.4L155,63.8L151.7,64.1L149.3,63.4L149.6,62.3L148.7,60.8L152.9,59.6L159,58.3L160.7,58.3L158.9,59.7L163.4,59.6L163.6,57.9L162.1,56.9L162.2,55.5L161.5,54.4L159.6,53.6L162.4,52.2L166.1,52.1L170,50.9L171.9,49.6L175.4,48.4L177.7,48.1L182.9,47L184.5,47.1L189.1,45.8L191.5,46.3L191.7,47.5L193.1,47L196.3,47.1L195.5,47.7L198.1,48.2L200.4,47.9L203.8,48.7L207.4,49L208.6,49.3L211.7,48.9L213.9,49.7L215.8,50L218.9,50.7L220.9,51.9L222.7,52.2L225.6,51.1L228.8,50.2L231.5,50.6L235.6,49.4L239.5,48.8L239.9,49.8L241.9,49.2L243.5,48L244.6,48.3L245.9,50.6L250.2,48.9L248.7,50.8L251.5,50.4L253,49.7L255.3,49.8L257.4,50.9L261.4,51.9L263.8,52.3L265.9,52.1L267.6,53.5L263.7,54.8L267,55.4L272.7,55L274.8,54.6L275.8,56.2L279.1,54.8L277.8,53.7L279.8,52.8L282.4,52.7L284.2,52.4L285.4,53L286.4,54.5L288.8,54.3L291.6,55.5L295.1,55L298,55.1L298.9,53.5L301,53L303.6,53.9L301.9,56.4L304.6,54.3L306.2,54.4L308.9,51.7L307.8,50.1L306.2,49L308.3,46.2L312,44.3L314.3,44.7L315.5,45.9L316.3,48.8L313.7,50.1ZM277.2,41.3L275.2,42.5L280.2,41.7L281.9,43L285.2,41.7L286.3,42.5L285.8,45L287.7,44L288.4,41.4L290.4,41L292,41.4L293.4,42.4L292.7,44.9L291.9,46.7L294.3,48L297,49.2L295.9,50.4L292.5,50.6L293,51.6L291.7,52.5L288.3,52.1L285.3,51.4L282.9,51.6L278.4,52.5L272,52.9L269.1,53.1L269,51.9L266.8,51.2L264.7,51.4L264,49.4L265.5,49.1L269,48.7L271.7,48.8L274.7,48.3L271.4,47.7L266.9,47.9L264.1,47.9L263.9,46.9L269.4,45.9L266.3,45.9L263.4,45.3L266.8,43.3L269,42.3L275.7,40.8ZM296.7,40.5L293.6,42.2L292,40.4L293,40.1L295.7,40ZM351,41.3L350.8,42L348.7,42L346.7,41.9L344.3,42.3L343.8,42.1L342.5,40.8L343.2,39.9L344.2,39.7L348.5,40ZM331.1,41.2L331.6,42.8L334.8,40.7L340.4,39.7L342.1,42.3L340.8,44L345.1,43.2L347.6,42.2L351.2,43.5L353.2,44.7L352.9,45.8L356.9,45.3L358.1,46.9L362.4,47.9L363.6,49L364.3,51.4L360,52.6L364,54.3L367,54.9L368.9,57.4L372.1,57.6L370.6,59.4L365.7,62.6L363.6,61.4L361.4,58.8L358.6,59.2L357.6,60.7L359.1,62.3L361.5,63.5L362,64.2L362.3,67L360.7,68.9L358.3,68.2L353.9,66L355.9,68.4L357.5,70L357.4,71L352.1,69.9L348.2,68.3L346.2,66.9L347.3,66.2L344.8,64.8L342.3,63.4L342,64.2L335.6,64.7L334.3,63.7L336.7,61.7L340.7,61.7L345.2,61.3L344.9,60.4L346.3,59L350.3,56.4L350.3,55.2L350,54.3L347.5,53.1L343.9,52.2L345.5,51.5L344.3,49.9L342.6,49.7L341.5,48.8L340,49.6L336.1,49.9L329.1,49.4L325.4,48.6L322.4,48.2L321.3,47.3L324.1,46.1L321.3,46.1L322.4,43.5L325.5,41.3L328.2,40.3L333.7,39.6ZM305.6,39.5L307.5,40L311.2,39.7L311.1,40.4L308.4,41.6L310.6,42.7L308.5,45L304.6,46L302.8,45.8L302.2,44.8L298.8,42.8L299.4,42L303.2,42.3L302.3,40.7ZM780,41.1L777,41.1L772.7,40.8L772.3,40.7L773,39.7L775.2,39.5L779,40.4ZM317.5,42.2L314,44.1L311.9,44L312.3,41.8L313.2,40.5L315,39.4L317.5,38.8L321.4,38.9L324.7,39.5L320.2,41.7ZM261,45.7L254.6,46.9L254.5,45.8L251.2,44.5L252.7,43.6L256.2,41.5L259.5,39.9L259.1,38.4L266,38L268.3,38.5L273.1,38.6L274.3,39.4L275.4,40.4L272.4,41L266,42.8L261.9,44.6ZM788.3,36.4L787.3,37.4L783.9,37.2L779.2,36.2L778.7,35.4L782.7,35.8ZM320.8,36.7L319,37.6L316.3,37.5L314.5,36.8L316.4,35.7L319.7,35.1L320.7,35.9ZM776.1,35.3L776.7,37.1L769.6,37L767.1,37.6L761.5,36L760.6,34.3L762.5,33.9L767.7,34ZM314.9,32.5L315.4,33.6L314.4,34.8L312.1,36.6L308.7,36.9L307,36.5L308.2,35.1L305,35.3L306.5,33.4L308.4,33.5L312,32.7L314.5,32.8ZM295.5,33.7L295.5,34.6L297.5,34.2L299.4,34.3L298.7,35.5L296.5,36.6L289.7,37L283.9,38.1L280.9,38.1L281.4,37.3L286.4,36.2L277.5,36.5L275.2,36.1L280.1,33.7L282.6,33.1L287.1,33.9L289.1,35.3L292.3,35.5L291.7,33.2L294.3,32.3L295.9,32.6ZM614.9,47.4L613.8,47.6L607.2,47.3L606.2,46.2L602.3,45.5L601.5,44.1L603.3,43.5L602.7,42.2L605.7,40L603.8,39.7L607.4,37.6L606.4,36.4L610.1,35.2L615.5,33.6L621.6,33.2L624.3,32.3L627.8,32L629.6,32.9L628.8,33.7L622.8,34.8L617.6,36L612.7,38.3L611,40.8L609,43.2L610.2,45.3ZM322.9,31.6L324.3,32.4L328,32.4L329,33.1L327.8,34L329.6,34.6L330.4,35.2L332.9,35.3L335.5,35.5L338.9,34.9L342.9,34.7L345.9,34.9L347.3,35.8L347.1,36.8L345.4,37.5L342.2,38L340,37.7L334.2,38.1L330.2,38.1L327.3,37.8L322.8,37L323.1,35.7L323.9,34.5L322.8,33.4L319.1,33.2L317.6,32.4L319.1,31.4ZM283.9,30.3L281.8,32.1L279.5,32.9L277.6,33.1L273.1,34.1L269.6,34.5L267.6,33.9L272.7,32.1L278.2,30.6L281,30.7ZM325.3,30.6L324.4,30.7L321,30.5L321.1,29.9L324.8,29.9L325.7,30.3ZM295.3,30.2L291.1,30.9L289.1,30.1L291.4,29.4L294.4,29.1L296.6,29.5ZM545.9,29.8L541.9,30.8L538.5,30.2L539.7,29.6L538.4,28.9L542.1,28.4L543.1,29.3ZM298.4,28.1L295.7,28.6L292.6,28.6L293,28.2L295.6,27.6L296.5,27.7ZM322.7,29.4L319.5,29.8L318.5,29.3L318.5,28.4L319.3,27.5L321.6,27.6L322.5,27.7L323.9,28.5ZM315.4,28.7L315.2,29.7L312.5,29.4L310.2,28.7L306.1,28.6L308.6,27.9L306.9,27.4L307.7,26.5L311,26.8L315.1,27.7ZM693.9,28.8L684.3,29.7L684.7,26.7L686,26.4L687.5,26.6L693.4,27.9ZM533.1,25.7L539.4,27.3L535,28.2L534.3,29.9L532.7,30.3L532.1,32.3L529.9,32.4L525.7,30.9L527.2,30.1L524.4,29.4L520.6,27.5L519,25.8L523.8,25L524.9,25.7L527.5,25.7L528,25L530.7,24.9ZM545.7,24.1L549.5,24.9L547.1,26.1L541.9,26.3L536.5,26L536,25.3L533.4,25.3L531.2,24.3L536.7,23.7L539.4,24.2L541,23.6ZM591.7,23.8L589.5,24.1L587.9,24.3L587.9,24.6L586,25L583.7,24.5L584.4,23.8L580.4,23.7L583.7,23.3L586.4,23.3L587.1,23.9L587.8,23.4L589.3,23L592.2,23.5ZM683.1,27.5L679.4,27.8L673.7,27.1L669.8,26.3L666.9,24.7L664,24.3L667.1,22.8L670.4,22.3L675.1,23.4L681.5,25.5ZM342.1,25.7L343.7,26.5L340.6,27.1L335.7,28.8L332.3,29L328.7,28.7L327.6,27.8L328.4,27L330.4,26.4L327.1,26.4L325.8,25.6L325.7,24.7L327.9,23.7L329.9,23.1L331.9,22.9L331.6,22.4L335.9,22.3L337,23.4L339.5,23.9L342,24.3ZM381.7,18.7L386.2,18.8L389.6,19.1L392.4,19.6L391.8,20.1L386.8,21L382.2,21.4L380.3,21.8L384.1,21.8L378.9,23.1L375.5,23.7L371.1,25.4L367.1,25.8L365.6,26.3L359.9,26.5L362.2,26.8L360.6,27.2L361.3,28.3L358.9,29.1L355.6,29.7L354.1,30.6L351,31.3L350.8,31.9L354.1,31.8L353.7,32.4L347.7,33.8L343.3,33.1L337.4,33.5L334.9,33.2L331.4,33.1L332.1,31.9L335.9,31.4L336.4,29.7L337.7,29.6L341.8,30.6L340.5,29.1L337.8,28.6L340.1,27.8L343.8,27.2L345,26.4L343.2,25.6L343.5,24.5L348.3,24.6L349.5,24.8L353.1,24L349.2,23.8L342.8,23.9L340.4,23.2L339.8,22.3L338.4,21.7L338.8,21L341.9,20.6L344,20.6L347.8,20.3L351.3,19.5L353.3,19.6L354.5,20.2L357.1,19.1L359.7,18.8L363.1,18.6L368.4,18.5L369.1,18.7L374.5,18.4L378.1,18.5ZM453.5,17.9L463.8,19.4L460.3,20.1L453.6,20.2L444.1,20.4L444.9,20.8L451.2,20.6L456.2,21.2L459.8,20.6L461.1,21.3L458.8,22.5L463.5,21.8L472.3,21L477.5,21.4L478.3,22.3L470.8,23.8L469.7,24.2L463.9,24.6L468,24.7L465.6,26.3L463.8,27.8L463.4,30.3L465.4,31.9L462.4,32L459.2,32.7L462.5,34L462.6,36L460.5,36.3L462.6,38.4L458.3,38.5L460.4,39.6L459.6,40.4L456.8,40.8L454.1,40.8L456.2,42.5L456.1,43.7L452.4,42.6L451.2,43.3L453.8,43.9L456.1,45.5L456.5,47.6L452.9,48.1L451.5,47.1L449.3,45.6L449.7,47.3L447.1,48.7L452.4,48.8L455.1,48.9L449.3,51.2L443.4,53.3L437.3,54.2L435,54.2L432.7,55.2L429.1,58L424.2,59.9L422.8,60L419.8,60.7L416.7,61.3L414.4,63L413.9,64.9L412.3,66.7L408.3,68.9L408.6,71.1L407,73.4L405.2,76.1L402.1,76.3L399.5,74L395.1,74L393.5,72.5L392.9,69.7L390.2,66.3L389.8,64.5L390.3,62.1L388.3,59.6L389.7,57.6L388.7,56.7L391.9,53.6L395.3,52.6L396.5,51.5L397.6,49.5L395,50.4L393.8,50.8L391.8,51.1L389.6,50.3L390.2,48.5L391.5,47.2L393.4,47.1L397.2,47.8L394.4,46.2L393,45.3L390.9,45.6L389.5,45L392.7,42.6L391.9,41.7L391.1,40L389.9,37.3L387.9,36.4L388.5,35.4L384.1,34L380.2,33.8L375.1,33.9L370.3,34.1L368.6,33.3L366.3,31.8L371.6,31.1L375.5,30.9L367.9,30.3L364.4,29.4L365.2,28.5L372.9,27.4L380.4,26.3L381.6,25.5L377.3,24.7L379.5,23.9L386.8,22.4L389.6,22.2L389.5,21.3L394.1,20.7L399.8,20.4L405.2,20.4L406.6,21L412,19.9L415.7,20.7L418.1,20.8L421.4,21.5L417.8,20.4L418.6,19.6L425.2,18.4L431.2,18.5L433.8,17.8L439.9,17.7Z"};
+const CITIES=[{"n":"Ashburn","la":39.04,"lo":-77.49,"r":"NA","w":14,"x":308.3,"y":138.9},{"n":"New York","la":40.71,"lo":-74,"r":"NA","w":6,"x":318.2,"y":133.8},{"n":"Chicago","la":41.88,"lo":-87.63,"r":"NA","w":4,"x":285.9,"y":130.2},{"n":"Dallas","la":32.78,"lo":-96.8,"r":"NA","w":3,"x":254.7,"y":158.3},{"n":"San Jose","la":37.34,"lo":-121.89,"r":"NA","w":5,"x":196.3,"y":144.2},{"n":"Seattle","la":47.6,"lo":-122.33,"r":"NA","w":3,"x":209.7,"y":112.7},{"n":"Los Angeles","la":34.05,"lo":-118.24,"r":"NA","w":3,"x":201.7,"y":154.4},{"n":"Toronto","la":43.65,"lo":-79.38,"r":"CA","w":3,"x":307.7,"y":124.7},{"n":"Montreal","la":45.5,"lo":-73.57,"r":"CA","w":2,"x":323.5,"y":119.1},{"n":"Miami","la":25.76,"lo":-80.19,"r":"NA","w":2,"x":292.5,"y":180.2},{"n":"Frankfurt","la":50.11,"lo":8.68,"r":"EU","w":12,"x":520.3,"y":105.2},{"n":"Falkenstein","la":50.48,"lo":12.37,"r":"EU","w":6,"x":528.9,"y":104.1},{"n":"Amsterdam","la":52.37,"lo":4.9,"r":"EU","w":6,"x":511.3,"y":98.5},{"n":"London","la":51.5,"lo":-0.12,"r":"EU","w":6,"x":499.7,"y":101},{"n":"Paris","la":48.86,"lo":2.35,"r":"EU","w":4,"x":505.5,"y":108.9},{"n":"Helsinki","la":60.17,"lo":24.94,"r":"EU","w":4,"x":554.5,"y":75.9},{"n":"Stockholm","la":59.33,"lo":18.07,"r":"EU","w":2,"x":539.7,"y":78.3},{"n":"Warsaw","la":52.23,"lo":21.01,"r":"EU","w":2,"x":548.5,"y":98.9},{"n":"Zurich","la":47.37,"lo":8.54,"r":"EU","w":2,"x":520.3,"y":113.4},{"n":"Madrid","la":40.42,"lo":-3.7,"r":"EU","w":2,"x":490.9,"y":134.7},{"n":"Milan","la":45.46,"lo":9.19,"r":"EU","w":1,"x":522.1,"y":119.2},{"n":"Istanbul","la":41.01,"lo":28.98,"r":"EU","w":2,"x":571.1,"y":132.8},{"n":"Kyiv","la":50.45,"lo":30.52,"r":"EU","w":1,"x":571.2,"y":104.2},{"n":"Dublin","la":53.35,"lo":-6.26,"r":"EU","w":2,"x":485.7,"y":95.6},{"n":"Singapore","la":1.35,"lo":103.82,"r":"AS","w":5,"x":777.3,"y":255.8},{"n":"Tokyo","la":35.68,"lo":139.69,"r":"AS","w":4,"x":850.3,"y":149.3},{"n":"Seoul","la":37.57,"lo":126.98,"r":"AS","w":3,"x":816.1,"y":143.5},{"n":"Hong Kong","la":22.32,"lo":114.17,"r":"AS","w":3,"x":797.8,"y":190.9},{"n":"Mumbai","la":19.08,"lo":72.88,"r":"AS","w":2,"x":691.3,"y":201},{"n":"Bangalore","la":12.97,"lo":77.59,"r":"AS","w":1,"x":705.6,"y":219.9},{"n":"Taipei","la":25.03,"lo":121.57,"r":"AS","w":1,"x":815.1,"y":182.5},{"n":"Sydney","la":-33.87,"lo":151.21,"r":"OC","w":2,"x":881.7,"y":365},{"n":"São Paulo","la":-23.55,"lo":-46.63,"r":"SA","w":2,"x":378.7,"y":332.9},{"n":"Buenos Aires","la":-34.6,"lo":-58.38,"r":"SA","w":1,"x":353,"y":367.3},{"n":"Lagos","la":6.52,"lo":3.38,"r":"AF","w":1,"x":509,"y":239.9},{"n":"Johannesburg","la":-26.2,"lo":28.05,"r":"AF","w":1,"x":572.5,"y":341.2},{"n":"Dubai","la":25.2,"lo":55.27,"r":"ME","w":1,"x":643.2,"y":181.9},{"n":"Tel Aviv","la":32.08,"lo":34.78,"r":"ME","w":1,"x":588.3,"y":160.5}];
+const CUTXY={"TA":[404.8,114.5],"TP":[93.5,160.8],"RS":[602.6,204.3],"BA":[542.5,85],"AM":[293.6,216.7],"SA":[430.9,290.9],"WA":[465.4,229.1],"IP":[838.8,303.3]};
+// ===== Wind Tunnel simulation core (shared by node tests and the page) =====
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+// corridors: which real cable corridor a long link rides
+const CORRIDORS={
+  TA:{en:'Transatlantic',tr:'Transatlantik'},
+  TP:{en:'Transpacific',tr:'Transpasifik'},
+  RS:{en:'Red Sea / Suez',tr:'Kızıldeniz / Süveyş'},
+  BA:{en:'Baltic Sea',tr:'Baltık Denizi'},
+  AM:{en:'Caribbean (N↔S America)',tr:'Karayipler (K↔G Amerika)'},
+  SA:{en:'South Atlantic',tr:'Güney Atlantik'},
+  WA:{en:'West Africa',tr:'Batı Afrika'},
+  IP:{en:'Asia ↔ Oceania',tr:'Asya ↔ Okyanusya'},
+};
+const AMER=new Set(['NA','CA']), EUR=new Set(['EU','ME']), ASI=new Set(['AS']);
+const BALTIC=new Set(['Helsinki','Stockholm']);
+function corridorOf(a,b){
+  const ra=a.r, rb=b.r;
+  const pair=(x,y)=>(x.has(ra)&&y.has(rb))||(y.has(ra)&&x.has(rb));
+  const S=s=>new Set([s]);
+  if((BALTIC.has(a.n)&&!BALTIC.has(b.n)&&rb==='EU')||(BALTIC.has(b.n)&&!BALTIC.has(a.n)&&ra==='EU')) return 'BA';
+  if(pair(AMER,EUR)||pair(AMER,S('AF'))) return 'TA';
+  if(pair(AMER,ASI)||pair(AMER,S('OC'))) return 'TP';
+  if(pair(EUR,ASI)||pair(EUR,S('OC'))||pair(S('AF'),ASI)) return 'RS';
+  if(pair(AMER,S('SA'))) return 'AM';
+  if(pair(EUR,S('SA'))||pair(S('SA'),S('AF'))) return 'SA';
+  if(pair(EUR,S('AF'))) return 'WA';
+  if(pair(ASI,S('OC'))) return 'IP';
+  if(pair(S('SA'),ASI)||pair(S('SA'),S('OC'))) return 'TP';
+  return null;
+}
+function hav(a,b){const R=6371,r=Math.PI/180;const dLa=(b.la-a.la)*r,dLo=(b.lo-a.lo)*r;const s=Math.sin(dLa/2)**2+Math.cos(a.la*r)*Math.cos(b.la*r)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(s))}
+
+// Build network. Fibre: ~200 km per ms, route factor 1.5 over great circle, +1 ms access.
+function buildNet(cities,{N=160,D=6,G=6,seed=7}={}){
+  const rnd=mulberry32(seed);
+  const tot=cities.reduce((a,c)=>a+c.w,0);
+  const nodes=[];
+  // allocate counts by weight (largest remainder)
+  const raw=cities.map(c=>c.w/tot*N); const cnt=raw.map(Math.floor);
+  let left=N-cnt.reduce((a,b)=>a+b,0); raw.map((v,i)=>[v-cnt[i],i]).sort((a,b)=>b[0]-a[0]).slice(0,left).forEach(([,i])=>cnt[i]++);
+  cities.forEach((c,ci)=>{for(let j=0;j<cnt[ci];j++){const ang=rnd()*6.283,rad=2+rnd()*5;
+    nodes.push({id:nodes.length,ci,c,x:c.x+Math.cos(ang)*rad,y:c.y+Math.sin(ang)*rad*0.8,bw:rnd()<0.2?125000:6250});}}); // bytes per ms: 1 Gbps / 50 Mbps
+  const n=nodes.length;
+  // pick publisher on a 1 Gbps node in Ashburn-ish by default (index chosen later)
+  nodes.forEach(nd=>{nd.mesh=[];nd.gossip=[]});
+  const linkSet=new Set(); const key=(a,b)=>a<b?a+'_'+b:b+'_'+a;
+  // random mesh like libp2p (peer discovery is not geographic)
+  for(let pass=0;pass<4;pass++) for(const a of nodes){ let tries=0; while(a.mesh.length<D&&tries++<50){ const b=nodes[Math.floor(rnd()*n)];
+      if(b===a||b.mesh.length>=D+2||linkSet.has(key(a.id,b.id))) continue; linkSet.add(key(a.id,b.id)); a.mesh.push(b.id); b.mesh.push(a.id);} }
+  for(const a of nodes){ let tries=0; while(a.gossip.length<G&&tries++<50){ const b=nodes[Math.floor(rnd()*n)]; if(b===a||linkSet.has(key(a.id,b.id))) continue; linkSet.add(key(a.id,b.id)); a.gossip.push(b.id); b.gossip.push(a.id);} }
+  const lat=new Map(), cor=new Map();
+  for(const k of linkSet){const [i,j]=k.split('_').map(Number);const A=nodes[i],B=nodes[j];
+    const km=A.ci===B.ci?20:hav(A.c,B.c); lat.set(k,1+km*1.5/200); cor.set(k,A.ci===B.ci?null:corridorOf(A.c,B.c));}
+  return {nodes,lat,cor,key,links:[...linkSet]};
+}
+
+class Heap{constructor(){this.a=[]}push(e){const a=this.a;a.push(e);let i=a.length-1;while(i>0){const p=(i-1)>>1;if(a[p].t<=e.t)break;a[i]=a[p];i=p}a[i]=e}
+  pop(){const a=this.a,top=a[0],last=a.pop();const n=a.length;if(n){let i=0;while(true){let l=2*i+1,r=l+1,m=-1,mt=last.t;if(l<n&&a[l].t<mt){m=l;mt=a[l].t}if(r<n&&a[r].t<mt){m=r}if(m<0)break;a[i]=a[m];i=m}a[i]=last;}return top}get size(){return this.a.length}}
+
+// retransmission delay for a payload of `bytes` over a link with packet loss p (MTU 1400): max over packets of geometric retries, each costs one RTT + 5 ms
+function retrans(bytes,p,rtt,rnd){ if(p<=0) return 0; const S=Math.ceil(bytes/1400); const u=rnd(); let r=0; while(r<20&&Math.pow(1-Math.pow(p,r+1),S)<u) r++; return r*(rtt+5); }
+
+// ---- GF(256) (coefficient vectors only; payload math is linear and done on demand) ----
+const EXP=new Uint8Array(512),LOG=new Uint8Array(256);(function(){let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11d}for(let i=255;i<512;i++)EXP[i]=EXP[i-255]})();
+const gmul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]]; const ginv=a=>EXP[255-LOG[a]];
+class Span{ // reduced row echelon basis over GF(256)
+  constructor(k){this.k=k;this.rows=[];this.piv=[]}
+  get rank(){return this.rows.length}
+  reduce(v){const c=Uint8Array.from(v);for(let r=0;r<this.rows.length;r++){const f=c[this.piv[r]];if(f){const R=this.rows[r];for(let j=0;j<this.k;j++)c[j]^=gmul(f,R[j])}}return c}
+  add(v){const c=this.reduce(v);let p=-1;for(let j=0;j<this.k;j++)if(c[j]){p=j;break}if(p<0)return false;const inv=ginv(c[p]);for(let j=0;j<this.k;j++)c[j]=gmul(c[j],inv);
+    for(const R of this.rows){const f=R[p];if(f)for(let j=0;j<this.k;j++)R[j]^=gmul(f,c[j])}this.rows.push(c);this.piv.push(p);return true}
+  recode(rnd){const c=new Uint8Array(this.k);for(const R of this.rows){const f=1+Math.floor(rnd()*255);for(let j=0;j<this.k;j++)c[j]^=gmul(f,R[j])}return c}
+}
+
+/* simulate(proto, net, P)
+   P: {B bytes, loss p, k, r threshold, m publisher multiplier, pub id, cut:Set corridors, dark:Set city indices, seed, hb heartbeat ms}
+   returns {t[] decode/arrival time per node, ev[] transmissions, log per node, stats} */
+function simulate(proto,net,P){
+  const {nodes,lat,cor,key}=net; const n=nodes.length; const rnd=mulberry32(P.seed*97+(proto==='g'?1:2));
+  const alive=nodes.map(nd=>!P.dark.has(nd.ci));
+  const up=(a,b)=>alive[a]&&alive[b]&&!(P.cut.has(cor.get(key(a,b))));
+  const L=(a,b)=>lat.get(key(a,b));
+  const free=new Float64Array(n), T=new Float64Array(n).fill(Infinity), idw=nodes.map(()=>new Set());
+  const ev=[]; const st={sent:0,bytes:0,useful:0,dup:0,unhelpful:0,unnecessary:0,dead:0,retx:0};
+  const H=new Heap(); const HB=P.hb||700;
+  const pub=P.pub;
+  const k=P.k, shard=Math.ceil(P.B/k)+k; // payload + coefficient header
+  const span=proto==='m'?nodes.map(()=>new Span(k)):null;
+  const rankLog=nodes.map(()=>[]); const recv=nodes.map(()=>[]); // mump2p: per node list of {t,v,from,inn}
+  // per-node upload queue: items are taken at line rate; IDONTWANT received before an item starts cancels it
+  const Q=nodes.map(()=>[]), busy=new Uint8Array(n);
+  const sentTo=nodes.map(()=>new Map()), pend=nodes.map(()=>new Set());
+  const cap=a=>a===P.pub?Infinity:Math.ceil(P.beta*k/nodes[a].mesh.length);
+  function xmit(a,b,t,bytes,payload){ if(payload==='rec'){ if(pend[a].has(b)) return; pend[a].add(b);} Q[a].push({b,bytes,payload}); if(!busy[a]){busy[a]=1;H.push({t,type:'tx',a});} }
+  function startTx(a,t){
+    while(Q[a].length){ const it=Q[a].shift(); const b=it.b; if(it.payload==='rec') pend[a].delete(b);
+      if(idw[a].has(b)) continue;                       // peer already has it
+      if(proto==='m'&&it.payload==='rec'&&(it.pull?span[a].rank===0:sentTo[a].get(b)>=Math.min(span[a].rank,cap(a)))) continue; // nothing new to give
+      let pl=it.payload; if(pl==='rec') pl=span[a].recode(rnd);
+      if(proto==='m') sentTo[a].set(b,(sentTo[a].get(b)||0)+1);
+      st.sent++; st.bytes+=it.bytes; const d=it.bytes/nodes[a].bw;
+      if(!up(a,b)){ st.dead++; ev.push({a,b,ts:t,ta:t+d+L(a,b),k:4}); }
+      else { const l=L(a,b); const rt=retrans(it.bytes,P.loss,2*l,rnd); if(rt>0) st.retx++; H.push({t:t+d+l+rt,type:'rx',a,b,payload:pl,ts:t}); }
+      // keep streaming fresh combinations to this peer round-robin while we hold degrees of freedom it has not been offered
+      if(proto==='m'&&it.payload==='rec'&&!idw[a].has(b)&&sentTo[a].get(b)<Math.min(span[a].rank,cap(a))&&(nodes[a].mesh.includes(b))){pend[a].add(b);Q[a].push({b,bytes:it.bytes,payload:'rec'});}
+      H.push({t:t+d,type:'tx',a}); return; }
+    busy[a]=0;
+  }
+  if(proto==='g'){
+    T[pub]=0; for(const b of nodes[pub].mesh) xmit(pub,b,0,P.B);
+    for(let i=0;i<n;i++) if(i!==pub) H.push({t:HB*(0.5+rnd()*0.5),type:'hb',a:i});
+    while(H.size){const e=H.pop(); if(e.t>15000) break;
+      if(e.type==='tx'){startTx(e.a,e.t);continue}
+      if(e.type==='rx'){const {a,b}=e; if(T[b]<Infinity){st.dup++;ev.push({a,b,ts:e.ts,ta:e.t,k:1});continue}
+        st.useful++; ev.push({a,b,ts:e.ts,ta:e.t,k:0}); T[b]=e.t;
+        for(const c of nodes[b].mesh) if(c!==a&&up(b,c)) H.push({t:e.t+L(b,c),type:'idw',a:b,b:c});
+        for(const c of nodes[b].mesh) if(c!==a&&!idw[b].has(c)) xmit(b,c,e.t,P.B);
+      } else if(e.type==='idw'){ idw[e.b].add(e.a); }
+      else if(e.type==='hb'){const i=e.a; if(T[i]<Infinity||!alive[i]) continue;
+        // IHAVE/IWANT: ask a connected peer (mesh or gossip) that already has the block
+        const peers=[...nodes[i].mesh,...nodes[i].gossip].filter(c=>up(i,c)&&T[c]<=e.t);
+        if(peers.length){const c=peers[Math.floor(rnd()*peers.length)]; xmit(c,i,e.t+L(i,c),P.B);}
+        H.push({t:e.t+HB,type:'hb',a:i}); }
+    }
+  } else {
+    T[pub]=0; const ps=span[pub]; for(let i=0;i<k;i++){const v=new Uint8Array(k);v[i]=1;ps.add(v)} rankLog[pub].push([0,k]);
+    const M=nodes[pub].mesh; const tot=Math.ceil(k*P.m);
+    for(let i=0;i<tot;i++){ const b=M[i%M.length]; xmit(pub,b,0,shard,'rec'); }
+    for(let i=0;i<n;i++) if(i!==pub) H.push({t:HB*(0.5+rnd()*0.5),type:'hb',a:i});
+    while(H.size){const e=H.pop(); if(e.t>15000) break;
+      if(e.type==='tx'){startTx(e.a,e.t);continue}
+      if(e.type==='rx'){const {a,b,payload}=e; const S=span[b];
+        if(T[b]<Infinity){st.unnecessary++;ev.push({a,b,ts:e.ts,ta:e.t,k:3});continue}
+        const inn=S.add(payload); recv[b].push({t:e.t,v:payload,from:a,inn});
+        if(!inn){st.unhelpful++;ev.push({a,b,ts:e.ts,ta:e.t,k:2});continue}
+        st.useful++; ev.push({a,b,ts:e.ts,ta:e.t,k:0}); rankLog[b].push([e.t,S.rank]);
+        if(S.rank===k){T[b]=e.t; for(const c of nodes[b].mesh) if(up(b,c)) H.push({t:e.t+L(b,c),type:'idw',a:b,b:c});}
+        // relay before decoding: forward to mesh peers that have not said IDONTWANT
+        if(S.rank>k*P.r) for(const c of nodes[b].mesh){ if(c===a||idw[b].has(c)) continue; xmit(b,c,e.t,shard,'rec'); }
+      } else if(e.type==='idw'){ idw[e.b].add(e.a); }
+      else if(e.type==='hb'){const i=e.a; if(T[i]<Infinity||!alive[i]) continue;
+        const need=k-span[i].rank;
+        const peers=[...nodes[i].mesh,...nodes[i].gossip].filter(c=>up(i,c)&&span[c].rank>span[i].rank);
+        peers.sort((x,y)=>span[y].rank-span[x].rank);
+        let sent=0; for(const c of peers.slice(0,3)){ const q=Math.ceil((need+1)/Math.min(3,peers.length)); for(let j=0;j<q;j++){Q[c].push({b:i,bytes:shard,payload:'rec',pull:1}); if(!busy[c]){busy[c]=1;H.push({t:e.t+L(i,c),type:'tx',a:c});} sent++} }
+        H.push({t:e.t+HB,type:'hb',a:i}); }
+    }
+  }
+  return {T,ev,st,rankLog,recv,alive};
+}
+if(typeof module!=='undefined') module.exports={buildNet,simulate,mulberry32,Span,gmul,ginv,CORRIDORS,corridorOf};
+
+</script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const W=1000,H=520,GW=250,GH=130,CELL=4;
+const SIZES=[131072,262144,524288,1048576,2097152,4194304];
+const fmtB=b=>b>=1048576?(b/1048576)+' MB':(b/1024)+' KB';
+const PX=128, BYTES=PX*PX*3;
+
+// ---------- i18n ----------
+const TR={
+ fan:'hayran yapımı · resmi bir Optimum ürünü değil', sound:'♪ Dinle', dark:'Koyu', light:'Açık',
+ lede:'Aynı Dünya. Aynı kablolar. Aynı blok. <em>Onu taşımanın iki yolu.</em>',
+ sub:'Kendi dosyan parçalara bölünüyor ve gerçek Galois cismi aritmetiğiyle kodlanıyor. Sonra gerçek şehirlerin, fiber mesafelerinin ve denizaltı kablo güzergâhlarının üzerine kurulu bir ağda gönderiliyor. Kabloları kes, bir veri merkezini karart ve bloğun attestation sınırından önce nereye yetiştiğini izle.',
+ c1:'Senin bloğun', drop:'Buraya bir resim bırak ya da', pick:'dosya seç', kL:'Parça sayısı k (nesil boyutu)',
+ c2:'Koşullar', bL:'Ağdaki blok boyutu', lL:'Bağlantı başına paket kaybı', pL:'Bloğun yayınlandığı an', betaL:'Eş başına shard bütçesi (β)',
+ betaN:'β bant genişliği ile hızı takas eder: her aktarıcı bir eşe, istenmeden önce en fazla β·k/D taze kombinasyon sunar.',
+ c3:'Sabotaj', cutN:'Bir kablo koridorunu buradan ya da haritadan kes. O koridordan geçen tüm eş bağlantıları kararır.',
+ darkN:'Bir şehri karartmak için düğümlerinden birine tıkla ve sağdaki sondadaki düğmeyi kullan.',
+ vD:'Kim nerede kazanıyor', hint:'Düğüme tıkla, sonda ile incele · koridoru kesmek için ✂ rozetine tıkla',
+ rlnc:'RLNC shardları', full:'tam blok', probe:'Sonda', rankL:'Rank',
+ mxN:'Solda bu düğümün elindeki katsayı matrisi, GF(2⁸) üzerinde basamak formuna indirgenmiş hâli. Köşegende tek parlak pikseller varsa her parça çözülmüş demektir.',
+ feedT:'Buraya gelen shardlar',
+ h1:'Burada gerçek olan ne',
+ r1:'<b>Kodlama.</b> Her shard GF(2⁸) üzerinde rastgele bir katsayı vektörü taşır. Aktarıcılar önce çözmeden, ellerindekini karıştırarak yeniden kodlar. Sonda, Gauss eliminasyonunu dosyanın gerçek baytları üzerinde çalıştırır.',
+ r2:'<b>Coğrafya.</b> Düğümler, Ethereum düğümlerinin yoğunlaştığı yerlere göre ağırlıklandırılmış 38 barındırma merkezinde. Gecikme, büyük daire mesafesi × 1,5, fiberde milisaniyede 200 km ile hesaplanır.',
+ r3:'<b>Bant genişliği.</b> Düğümlerin %20\'si 1 Gbps, %80\'i 50 Mbps. OptimumP2P makalesinin Ethshadow testlerinde kullandığı dağılımın aynısı.',
+ r4:'<b>Adalet.</b> İki protokol de aynı eşleri, aynı bağlantıları, aynı kaybı ve aynı güvenilir taşıma katmanını kullanır. Kaybolan paket ikisinde de yeniden gönderim ister. Kodlama, düğüm hiçbir zaman belirli bir shardı beklemediği için öne geçer.',
+ h2:'Her tarafın kuralları',
+ g1:'<b>Gossipsub:</b> D = 6 mesh. Düğüm bloğu iletmeden önce tamamını almak zorunda. IDONTWANT kuyruktaki kopyaları iptal eder, 700 ms\'lik heartbeat ile IHAVE/IWANT mahsur kalan düğümleri kurtarır.',
+ m1:'<b>mump2p:</b> Yayıncı, geliştirici varsayılanlarına uygun olarak 1,5·k kodlu shardı sırayla gönderir. Aktarıcılar ellerine ilk shard geçer geçmez taze yeniden kodlanmış shard iletir, çözünce IDONTWANT yollar, takılınca IWANT ile çeker.',
+ x1:'<b>Modellenmeyenler:</b> doğrulama ve çözme için CPU, QUIC, eş puanlama, imza kontrolleri ve gerçek mesh. Bu bir rüzgar tüneli, mainnet tekrarı değil.',
+ h3:'Gerçek dünyada',
+ w1:'mump2p, <b>20 Ekim 2026</b>\'da 16 operatörle Ethereum mainnet\'te canlıya geçti. <a href="https://chainwire.org/2026/10/20/optimum-launches-on-ethereum-mainnet-reaching-3-4b-in-total-value-boosted-across-leading-validators/" target="_blank" rel="noopener">Duyuru</a>',
+ w2:'Lido\'nun bağımsız Hoodi testi: p95 blok varışı <b>1.614 ms\'den 1.207 ms\'ye</b>, geç bloklar %1,97\'den %0,34\'e indi, yanlış head oyları %45 azaldı. <a href="https://research.lido.fi/t/perch-request-for-node-operators-to-run-and-test-optimum-mump2p/11786" target="_blank" rel="noopener">Lido forumu</a>',
+ w3:'Kablo senaryoları gerçek olaylardan esinlendi: Kasım 2024\'teki <a href="https://en.wikipedia.org/wiki/C-Lion1" target="_blank" rel="noopener">C-Lion1</a> Baltık kesintisi ve Eylül 2025\'te <a href="https://www.thenationalnews.com/future/technology/2025/09/07/middle-east-internet-slowdowns-could-last-months-after-red-sea-cable-damage" target="_blank" rel="noopener">Cidde açıklarındaki Kızıldeniz kesintileri</a>. Burada kesilen koridor, üzerinden geçen tüm bağlantıları düşürür; yani en kötü durum.',
+ w4:'Protokol kaynakları: <a href="https://arxiv.org/abs/2508.04833" target="_blank" rel="noopener">OptimumP2P makalesi</a>, <a href="https://docs.getoptimum.xyz/docs/learn/overview/p2p" target="_blank" rel="noopener">mump2p dokümanları</a>, <a href="https://github.com/getoptimum/optimum-dev-setup-guide" target="_blank" rel="noopener">geliştirici varsayılanları</a>.',
+ foot:'Optimum topluluğu için ecamli tarafından yapıldı. Bir simülasyondur, benchmark değildir.'
+};
+const EN={}; document.querySelectorAll('[data-i]').forEach(el=>{EN[el.dataset.i]=el.dataset.html?el.innerHTML:el.textContent});
+let lang='en'; try{ if((localStorage.getItem('wt-lang')||(navigator.language||'').slice(0,2))==='tr') lang='tr'; }catch(e){}
+const L=(en,tr)=>lang==='tr'?tr:en;
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i]').forEach(el=>{const v=lang==='tr'?(TR[el.dataset.i]??EN[el.dataset.i]):EN[el.dataset.i]; if(el.dataset.html) el.innerHTML=v; else el.textContent=v;});
+  $('lEN').setAttribute('aria-pressed',lang==='en'); $('lTR').setAttribute('aria-pressed',lang==='tr');
+  $('msg').placeholder=L('…or type a message','…ya da bir mesaj yaz');
+  $('k').options[0].textContent=L('4 (mump2p dev default)','4 (mump2p geliştirici varsayılanı)');
+  buildChips(); syncLabels(); writeVerdict(); legend(); inspector(true);
+}
+$('lEN').onclick=()=>{lang='en';try{localStorage.setItem('wt-lang','en')}catch(e){};applyLang()};
+$('lTR').onclick=()=>{lang='tr';try{localStorage.setItem('wt-lang','tr')}catch(e){};applyLang()};
+
+// ---------- theme ----------
+let COL={};
+function readCols(){const cs=getComputedStyle(document.documentElement);const get=n=>cs.getPropertyValue(n).trim();
+  const hex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
+  ['bg','panel','line','line2','fg','mute','faint','land','ocean','m','m2','mdeep','g','g2','gdeep','late','dead','ok'].forEach(n=>{COL[n]=get('--'+n);COL[n+'_']=hex(COL[n])});
+  landCache=null;}
+function setTheme(t){ if(t) document.documentElement.setAttribute('data-theme',t); else document.documentElement.removeAttribute('data-theme');
+  const cur=t||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  $('thD').setAttribute('aria-pressed',cur==='dark'); $('thL').setAttribute('aria-pressed',cur==='light'); readCols(); legend(); dirtyHeat=true; }
+$('thD').onclick=()=>setTheme('dark'); $('thL').onclick=()=>setTheme('light');
+matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{ if(!document.documentElement.hasAttribute('data-theme')) setTheme(null); });
+
+// ---------- state ----------
+const S={k:16,Bi:3,loss:1,pubAt:3000,beta:3,cut:new Set(),dark:new Set(),view:'m',t:0,playing:true,speed:0.25,sel:null};
+const net=buildNet(CITIES,{N:160,seed:7});
+const NODES=net.nodes, N=NODES.length;
+const PUB=NODES.findIndex(n=>n.c.n==='Ashburn'&&n.bw>10000);
+const cityIdx=n=>CITIES.findIndex(c=>c.n===n);
+let R=null; // results
+
+// ---------- payload ----------
+const srcCv=$('srcCv'), sctx=srcCv.getContext('2d',{willReadFrequently:true});
+let SRC=new Uint8Array(BYTES);
+const markPath=new Path2D(document.querySelector('.brand path').getAttribute('d'));
+function drawDefault(text){
+  const g=sctx.createLinearGradient(0,0,128,128); g.addColorStop(0,'#2a1250'); g.addColorStop(1,'#b87cff');
+  sctx.fillStyle=g; sctx.fillRect(0,0,128,128);
+  for(let i=0;i<9;i++){sctx.strokeStyle='rgba(255,255,255,'+(0.05+i*0.012)+')';sctx.beginPath();sctx.arc(64,128,20+i*12,Math.PI,0);sctx.stroke()}
+  sctx.save(); sctx.translate(30,18); sctx.scale(1.85,1.85); sctx.fillStyle='#fff'; sctx.fill(markPath); sctx.restore();
+  sctx.fillStyle='#fff'; sctx.textAlign='center'; sctx.font='800 15px Geist, sans-serif';
+  const words=(text||'SPEED IS MONEY').toUpperCase().split(/\s+/); let lines=[],cur='';
+  for(const w of words){const tst=(cur?cur+' ':'')+w; if(sctx.measureText(tst).width>116&&cur){lines.push(cur);cur=w}else cur=tst} if(cur) lines.push(cur);
+  lines=lines.slice(0,3); lines.forEach((l,i)=>sctx.fillText(l,64,92+i*16-(lines.length-1)*8));
+  readSrc();
+}
+function readSrc(){const d=sctx.getImageData(0,0,128,128).data; for(let i=0,j=0;i<d.length;i+=4){SRC[j++]=d[i];SRC[j++]=d[i+1];SRC[j++]=d[i+2]} resetDec(); drawStripes(); inspector(true);}
+function loadImg(file){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(im.width,im.height);sctx.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,128,128);readSrc()};im.src=r.result};r.readAsDataURL(file)}
+$('pick').onclick=()=>$('file').click(); $('file').onchange=e=>{if(e.target.files[0]) loadImg(e.target.files[0])};
+const drop=$('drop'); ['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) loadImg(f)});
+let msgT; $('msg').oninput=e=>{clearTimeout(msgT);msgT=setTimeout(()=>drawDefault(e.target.value.trim()||null),250)};
+function drawStripes(){const k=S.k, el=$('stripes'); el.style.gridTemplateColumns='repeat('+Math.min(k,16)+',1fr)'; el.innerHTML='';
+  for(let i=0;i<k;i++){const d=document.createElement('div');const o=(i*(BYTES/k))+((64/k|0)*128+64)*3;d.style.background='rgb('+SRC[o]+','+SRC[o+1]+','+SRC[o+2]+')';el.appendChild(d)}
+  $('fragNote').textContent=L(`${k} fragments of ${(BYTES/k).toLocaleString()} bytes each. A node needs any ${k} independent coded shards to rebuild the image.`,`Her biri ${(BYTES/k).toLocaleString('tr')} bayt olan ${k} parça. Bir düğüm resmi geri kurmak için herhangi ${k} bağımsız kodlu sharda ihtiyaç duyar.`);}
+
+// ---------- controls ----------
+const SCEN=[
+ {id:'calm',en:'Calm day',tr:'Sakin gün',set:{Bi:3,loss:0.5,cut:[],dark:[]}},
+ {id:'red',en:'Red Sea cut',tr:'Kızıldeniz kesildi',set:{Bi:3,loss:1,cut:['RS'],dark:[]}},
+ {id:'baltic',en:'Baltic cut',tr:'Baltık kesildi',set:{Bi:3,loss:1,cut:['BA'],dark:[]}},
+ {id:'islands',en:'Americas cut off',tr:'Amerika koptu',set:{Bi:3,loss:1,cut:['TA','TP'],dark:[]}},
+ {id:'dc',en:'Hetzner regions dark (what if)',tr:'Hetzner bölgeleri karanlık (varsayım)',set:{Bi:3,loss:1,cut:[],dark:['Falkenstein','Helsinki']}},
+ {id:'storm',en:'Lossy internet (5%)',tr:'Kayıplı internet (%5)',set:{Bi:3,loss:5,cut:[],dark:[]}},
+ {id:'blob',en:'4 MB blob-heavy block',tr:'4 MB blob yüklü blok',set:{Bi:5,loss:1,cut:[],dark:[]}},
+];
+function buildChips(){
+  const sc=$('scen'); sc.innerHTML='';
+  for(const s of SCEN){const b=document.createElement('button');b.className='chip scen';b.textContent=L(s.en,s.tr);
+    const m=s.set; const match=S.Bi===m.Bi&&S.loss===m.loss&&S.cut.size===m.cut.length&&m.cut.every(c=>S.cut.has(c))&&S.dark.size===m.dark.length&&m.dark.every(c=>S.dark.has(cityIdx(c)));
+    b.setAttribute('aria-pressed',match);
+    b.onclick=()=>{try{history.replaceState(null,'','#'+s.id)}catch(e){location.hash=s.id};S.Bi=m.Bi;S.loss=m.loss;S.cut=new Set(m.cut);S.dark=new Set(m.dark.map(cityIdx));$('B').value=S.Bi;$('loss').value=S.loss;rerun()}; sc.appendChild(b)}
+  const cu=$('cuts'); cu.innerHTML='';
+  for(const id in CORRIDORS){const b=document.createElement('button');b.className='chip';b.textContent='✂ '+CORRIDORS[id][lang];b.setAttribute('aria-pressed',S.cut.has(id));
+    b.onclick=()=>{S.cut.has(id)?S.cut.delete(id):S.cut.add(id);rerun()}; cu.appendChild(b)}
+  const dl=$('darkList'); dl.innerHTML='';
+  for(const ci of S.dark){const b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed','true');b.textContent=CITIES[ci].n;b.title=L('Restore','Geri aç');
+    b.onclick=()=>{S.dark.delete(ci);rerun()}; dl.appendChild(b)}
+}
+function syncLabels(){
+  $('kV').textContent=S.k; $('bV').textContent=fmtB(SIZES[S.Bi]); $('lV').textContent=S.loss+' %';
+  $('pV').textContent=(S.pubAt/1000).toFixed(2).replace('.',lang==='tr'?',':'.')+(lang==='tr'?' sn':' s'); $('betaV').textContent=S.beta.toFixed(1);
+}
+$('k').onchange=e=>{S.k=+e.target.value;resetDec();drawStripes();rerun()};
+$('B').oninput=e=>{S.Bi=+e.target.value;syncLabels();rerunSoon()};
+$('loss').oninput=e=>{S.loss=+e.target.value;syncLabels();rerunSoon()};
+$('pubAt').oninput=e=>{S.pubAt=+e.target.value;syncLabels();writeVerdict();dirtyHeat=true;drawBarcode()};
+$('beta').oninput=e=>{S.beta=+e.target.value;syncLabels();rerunSoon()};
+$('speed').onchange=e=>{S.speed=+e.target.value};
+const budget=()=>4000-S.pubAt;
+let rt; function rerunSoon(){clearTimeout(rt);rt=setTimeout(rerun,140)}
+
+// ---------- simulation + post-processing ----------
+function post(res,proto){
+  const shard=Math.ceil(SIZES[S.Bi]/S.k)+S.k, size=proto==='g'?SIZES[S.Bi]:shard;
+  const ev=res.ev.slice().sort((a,b)=>a.ts-b.ts);
+  const byTa=res.ev.slice().sort((a,b)=>a.ta-b.ta);
+  const tsArr=Float64Array.from(ev,e=>e.ts); const wasteCum=new Uint32Array(ev.length+1);
+  ev.forEach((e,i)=>wasteCum[i+1]=wasteCum[i]+(e.k>0&&e.k<4?1:0));
+  const fin=[...res.T].filter((x,i)=>x<Infinity&&res.alive[i]&&i!==PUB).sort((a,b)=>a-b);
+  const alive=res.alive.filter(Boolean).length;
+  // first inbound full-block transfer per node (gossipsub progress ring)
+  const inb=new Array(N).fill(null); if(proto==='g') for(const e of ev) if(e.k===0&&!inb[e.b]) inb[e.b]=e;
+  return {...res,proto,ev,byTa,tsArr,wasteCum,size,fin,aliveN:alive,inb,grid:heatGrid(res.T,res.alive)};
+}
+function rerun(){
+  const P={B:SIZES[S.Bi],loss:S.loss/100,k:S.k,r:0,m:1.5,beta:S.beta,pub:PUB,cut:S.cut,dark:S.dark,seed:3,hb:700};
+  const t0=performance.now();
+  const m=post(simulate('m',net,P),'m'), g=post(simulate('g',net,P),'g');
+  R={m,g,ms:performance.now()-t0};
+  const mx=Math.max(m.fin.at(-1)||0, g.fin.at(-1)||0);
+  R.tMax=Math.max(budget()+150, Math.ceil((mx+60)/50)*50);
+  S.t=0; S.playing=true; playIco(); resetDec(); buildChips(); writeVerdict(); dirtyHeat=true; drawBarcode(); inspector(true);
+  $('build').textContent=L(`${N} nodes · ${R.m.ev.length.toLocaleString()} shard transfers + ${R.g.ev.length.toLocaleString()} block transfers simulated in ${R.ms|0} ms`,`${N} düğüm · ${R.m.ev.length.toLocaleString('tr')} shard + ${R.g.ev.length.toLocaleString('tr')} blok aktarımı ${R.ms|0} ms'de simüle edildi`);
+}
+
+// ---------- heat grid (inverse distance interpolation over land) ----------
+let landMask=null; const ALPHA=new Float32Array(GW*GH);
+const landPath=new Path2D(MAP.d);
+function buildMask(){const c=document.createElement('canvas');c.width=GW;c.height=GH;const x=c.getContext('2d');x.scale(GW/W,GH/H);x.fill(landPath);
+  const d=x.getImageData(0,0,GW,GH).data; landMask=new Uint8Array(GW*GH); for(let i=0;i<GW*GH;i++) landMask[i]=d[i*4+3]>60?1:0;}
+function heatGrid(T,alive){
+  if(!landMask) buildMask();
+  const g=new Float32Array(GW*GH).fill(NaN); const R2=70*70; if(!heatGrid.A) heatGrid.A=new Float32Array(GW*GH);
+  const pts=NODES.filter((n,i)=>alive[i]).map(n=>[n.x,n.y,T[n.id]<Infinity?T[n.id]:20000]);
+  for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){const i=gy*GW+gx; if(!landMask[i]) continue;
+    const x=gx*CELL+2,y=gy*CELL+2; let sw=0,sv=0;
+    let dmin=1e9; for(const p of pts){const dx=p[0]-x,dy=p[1]-y,d2=dx*dx+dy*dy; if(d2<dmin) dmin=d2; if(d2>R2) continue; const w=1/((d2+16)*(d2+16)); sw+=w; sv+=w*p[2];}
+    if(sw>0) g[i]=sv/sw; const dm=Math.sqrt(dmin); ALPHA[i]=dm<22?1:Math.max(0,1-(dm-22)/48); }
+  return g;
+}
+
+// ---------- map rendering ----------
+const map=$('map'), ctx=map.getContext('2d'); let dpr=1, cw=0, ch=0, landCache=null, dirtyHeat=true;
+const heatCv=document.createElement('canvas'); heatCv.width=GW; heatCv.height=GH; const hctx=heatCv.getContext('2d'); const heatImg=hctx.createImageData(GW,GH);
+function resize(){const r=map.getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1); cw=r.width; ch=r.height; map.width=Math.round(cw*dpr); map.height=Math.round(ch*dpr); landCache=null; dirtyHeat=true;
+  const b=$('bc'), br=b.getBoundingClientRect(); b.width=Math.round(br.width*dpr); b.height=Math.round(br.height*dpr); drawBarcode();}
+new ResizeObserver(resize).observe($('mapbox'));
+function landLayer(){ if(landCache) return landCache; const c=document.createElement('canvas'); c.width=map.width; c.height=map.height; const x=c.getContext('2d');
+  x.scale(map.width/W,map.height/H); x.fillStyle=COL.ocean; x.fillRect(0,0,W,H);
+  x.fillStyle=COL.land; x.fill(landPath); x.strokeStyle=COL.line2; x.lineWidth=0.6; x.stroke(landPath); landCache=c; return c; }
+const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+let lastHeatT=-1,lastHeatView='';
+function paintHeat(){
+  if(!R) return; const t=S.t, v=S.view, bud=budget(); const d=heatImg.data; const gm=R.m.grid, gg=R.g.grid;
+  const A=v==='g'?COL.g2_:COL.m2_, B=v==='g'?COL.gdeep_:COL.mdeep_, late=COL.late_, land=COL.land_;
+  for(let i=0;i<GW*GH;i++){ const o=i*4; let a=0,c=land; const al=0.1+0.9*ALPHA[i];
+    if(v==='d'){ const x=gm[i],y=gg[i]; if(!isNaN(x)&&Math.min(x,y)<=t){ const df=Math.min(y,2e4)-Math.min(x,2e4); const s=Math.max(-1,Math.min(1,df/400)); c=s>=0?mix(land,COL.m_,0.25+0.75*s):mix(land,COL.g_,0.25+0.75*-s); a=225; } }
+    else { const val=(v==='g'?gg:gm)[i]; if(!isNaN(val)&&val<=t){ if(val>bud){c=late;a=200}else{c=mix(A,B,Math.pow(val/bud,0.8));a=230} } }
+    d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=a*al; }
+  hctx.putImageData(heatImg,0,0); lastHeatT=t; lastHeatView=v; dirtyHeat=false;
+}
+// marching squares contour of grid at level lv
+function contour(grid,lv,x){
+  x.beginPath();
+  for(let gy=0;gy<GH-1;gy++)for(let gx=0;gx<GW-1;gx++){
+    const i=gy*GW+gx, a=grid[i],b=grid[i+1],c=grid[i+GW+1],d=grid[i+GW];
+    if(isNaN(a)||isNaN(b)||isNaN(c)||isNaN(d)) continue;
+    const idx=(a>lv?8:0)|(b>lv?4:0)|(c>lv?2:0)|(d>lv?1:0); if(idx===0||idx===15) continue;
+    const X=gx*CELL+2,Y=gy*CELL+2, f=(p,q)=>(lv-p)/(q-p);
+    const top=[X+CELL*f(a,b),Y], right=[X+CELL,Y+CELL*f(b,c)], bot=[X+CELL*f(d,c),Y+CELL], left=[X,Y+CELL*f(a,d)];
+    const seg=(p,q)=>{x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1])};
+    switch(idx){case 1:case 14:seg(left,bot);break;case 2:case 13:seg(bot,right);break;case 3:case 12:seg(left,right);break;case 4:case 11:seg(top,right);break;
+      case 5:seg(left,top);seg(bot,right);break;case 6:case 9:seg(top,bot);break;case 7:case 8:seg(left,top);break;case 10:seg(left,bot);seg(top,right);break;}
+  }
+  x.stroke();
+}
+const rankAt=(log,t)=>{let lo=0,hi=log.length;while(lo<hi){const m=(lo+hi)>>1;if(log[m][0]<=t)lo=m+1;else hi=m}return lo?log[lo-1][1]:0};
+function wrapTo(ax,bx){ if(bx-ax>500) return bx-1000; if(ax-bx>500) return bx+1000; return bx; }
+function frameMap(){
+  if(!R||!cw) return;
+  const sx=map.width/W, sy=map.height/H; ctx.setTransform(1,0,0,1,0,0);
+  ctx.drawImage(landLayer(),0,0);
+  if(dirtyHeat||Math.abs(S.t-lastHeatT)>0.5||lastHeatView!==S.view) paintHeat();
+  ctx.save(); ctx.scale(sx,sy); ctx.clip(landPath); ctx.imageSmoothingEnabled=true; ctx.drawImage(heatCv,0,0,W,H); ctx.restore();
+  ctx.save(); ctx.scale(sx,sy);
+  const v=S.view, res=v==='g'?R.g:R.m;
+  // deadline contour + wavefront
+  if(v!=='d'){ ctx.lineWidth=1.1/sx; ctx.setLineDash([4/sx,3/sx]); ctx.strokeStyle=COL.fg; ctx.globalAlpha=0.55; contour(res.grid,budget(),ctx); ctx.setLineDash([]);
+    if(S.t>0&&S.t<R.tMax){ctx.globalAlpha=0.9; ctx.lineWidth=1.6/sx; ctx.strokeStyle=v==='g'?COL.g:COL.m; contour(res.grid,S.t,ctx);} ctx.globalAlpha=1; }
+  // severed links
+  if(S.cut.size){ ctx.strokeStyle=COL.dead; ctx.globalAlpha=0.25; ctx.lineWidth=0.7/sx; ctx.setLineDash([3/sx,3/sx]); ctx.beginPath();
+    for(const k of net.links){ if(!S.cut.has(net.cor.get(k))) continue; const [i,j]=k.split('_').map(Number); const A=NODES[i],B=NODES[j]; const bx=wrapTo(A.x,B.x); ctx.moveTo(A.x,A.y); ctx.lineTo(bx,B.y); if(bx!==B.x){ctx.moveTo(B.x,B.y);ctx.lineTo(wrapTo(B.x,A.x),A.y)} }
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; }
+  // selected node mesh
+  if(S.sel!=null){ const A=NODES[S.sel]; ctx.strokeStyle=COL.fg; ctx.globalAlpha=0.35; ctx.lineWidth=0.8/sx; ctx.beginPath();
+    for(const j of A.mesh){const B=NODES[j]; ctx.moveTo(A.x,A.y); ctx.lineTo(wrapTo(A.x,B.x),B.y);} ctx.stroke(); ctx.globalAlpha=1; }
+  // packets in flight
+  const t=S.t; const evs=(v==='g'?R.g:R.m).ev; const big=v==='g';
+  let drawn=0; const cap=v==='g'?600:1800; ctx.lineCap='round';
+  for(let i=0;i<evs.length;i++){ const e=evs[i]; if(e.ts>t) break; if(e.ta<=t) continue; if(++drawn>cap) break;
+    const A=NODES[e.a],B=NODES[e.b]; const bx=wrapTo(A.x,B.x); const p=(t-e.ts)/(e.ta-e.ts);
+    const mx=(A.x+bx)/2, my=(A.y+B.y)/2-Math.hypot(bx-A.x,B.y-A.y)*0.12;
+    const at=u=>{const q=1-u;return [q*q*A.x+2*q*u*mx+u*u*bx, q*q*A.y+2*q*u*my+u*u*B.y]};
+    const len=Math.min(0.25,18/Math.max(20,Math.hypot(bx-A.x,B.y-A.y)));
+    let [x,y]=at(p), [x0,y0]=at(Math.max(0,p-len)); let off=0; if(x<0)off=1000; if(x>1000)off=-1000;
+    const col=e.k===0?(big?COL.g:COL.m):e.k===4?COL.dead:COL.faint;
+    ctx.strokeStyle=col; ctx.globalAlpha=e.k===0?(big?0.95:0.7):0.45; ctx.lineWidth=(big?2.4:1.2)/Math.max(0.6,sx);
+    ctx.beginPath(); ctx.moveTo(x0+off,y0); ctx.lineTo(x+off,y); ctx.stroke(); }
+  ctx.globalAlpha=1;
+  // nodes
+  const rr=3.6/Math.max(0.55,sx);
+  for(const nd of NODES){ const i=nd.id; const x=nd.x,y=nd.y;
+    if(!R.m.alive[i]){ ctx.strokeStyle=COL.dead; ctx.lineWidth=1.2/sx; ctx.beginPath(); ctx.moveTo(x-rr,y-rr);ctx.lineTo(x+rr,y+rr);ctx.moveTo(x+rr,y-rr);ctx.lineTo(x-rr,y+rr);ctx.stroke(); continue; }
+    if(v==='d'){ const a=R.m.T[i],b=R.g.T[i]; const done=Math.min(a,b)<=t; ctx.fillStyle=!done?COL.panel:(a<b?COL.m:a>b?COL.g:COL.mute); ctx.strokeStyle=COL.line2; ctx.lineWidth=0.6/sx;
+      ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.fill(); ctx.stroke(); }
+    else if(v==='m'){ const T=R.m.T[i]; const done=T<=t; const r=done?S.k:rankAt(R.m.rankLog[i],t);
+      ctx.fillStyle=done?COL.m:COL.panel; ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.fill();
+      if(!done&&r>0){ ctx.strokeStyle=COL.m; ctx.lineWidth=1.6/sx; ctx.beginPath(); ctx.arc(x,y,rr+0.6/sx,-Math.PI/2,-Math.PI/2+6.283*r/S.k); ctx.stroke(); }
+      if(done&&t-T<60){ ctx.strokeStyle=COL.m2; ctx.globalAlpha=1-(t-T)/60; ctx.lineWidth=1/sx; ctx.beginPath(); ctx.arc(x,y,rr+(t-T)/8,0,6.283); ctx.stroke(); ctx.globalAlpha=1; } }
+    else { const T=R.g.T[i]; const done=T<=t; ctx.fillStyle=done?COL.g:COL.panel; ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.fill();
+      const e=R.g.inb[i]; if(!done&&e&&e.ts<=t){ const p=Math.min(1,(t-e.ts)/(e.ta-e.ts)); ctx.strokeStyle=COL.g; ctx.globalAlpha=0.6; ctx.setLineDash([1.5/sx,1.5/sx]); ctx.lineWidth=1.4/sx; ctx.beginPath(); ctx.arc(x,y,rr+0.6/sx,-Math.PI/2,-Math.PI/2+6.283*p); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; }
+      if(done&&t-T<60){ ctx.strokeStyle=COL.g2; ctx.globalAlpha=1-(t-T)/60; ctx.lineWidth=1/sx; ctx.beginPath(); ctx.arc(x,y,rr+(t-T)/8,0,6.283); ctx.stroke(); ctx.globalAlpha=1; } }
+    if(!(v==='d')){ ctx.strokeStyle=COL.line2; ctx.lineWidth=0.5/sx; ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.stroke(); }
+  }
+  // publisher + selection
+  const P=NODES[PUB]; ctx.strokeStyle=COL.fg; ctx.lineWidth=1.2/sx; ctx.beginPath(); ctx.arc(P.x,P.y,rr*2.2,0,6.283); ctx.stroke();
+  ctx.fillStyle=COL.fg; ctx.font=`600 ${11/Math.max(sx,0.6)}px Geist, sans-serif`; ctx.textAlign='left'; ctx.fillText(L('publisher','yayıncı'),P.x+rr*2.6,P.y-rr*1.6);
+  if(S.sel!=null){ const Q=NODES[S.sel]; ctx.strokeStyle=COL.fg; ctx.lineWidth=1.5/sx; ctx.beginPath(); ctx.arc(Q.x,Q.y,rr*2.4,0,6.283); ctx.stroke();
+    ctx.fillText(Q.c.n,Q.x+rr*2.8,Q.y+rr*3.4); }
+  // corridor badges
+  for(const id in CUTXY){ const [x,y]=CUTXY[id]; const on=S.cut.has(id); const r=9/Math.max(sx,0.6);
+    ctx.fillStyle=on?COL.dead:COL.panel; ctx.strokeStyle=on?COL.dead:COL.line2; ctx.lineWidth=1/sx; ctx.beginPath(); ctx.arc(x,y,r,0,6.283); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=on?'#fff':COL.fg; ctx.font=`${11/Math.max(sx,0.6)}px Geist, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✂',x,y+0.5/sx); ctx.textBaseline='alphabetic'; }
+  ctx.restore();
+}
+// clicks on map
+map.addEventListener('click',e=>{ const r=map.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
+  for(const id in CUTXY){const [bx,by]=CUTXY[id]; if(Math.hypot(bx-x,by-y)<14){S.cut.has(id)?S.cut.delete(id):S.cut.add(id);rerun();return}}
+  let best=-1,bd=1e9; for(const n of NODES){const d=Math.hypot(n.x-x,n.y-y); if(d<bd){bd=d;best=n.id}} if(bd<18){S.sel=best;resetDec();inspector(true)} });
+map.addEventListener('mousemove',e=>{const r=map.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
+  let hit=false; for(const id in CUTXY){const [bx,by]=CUTXY[id]; if(Math.hypot(bx-x,by-y)<14){hit=true;map.title='✂ '+CORRIDORS[id][lang];break}}
+  if(!hit){ let bd=1e9,bn=null; for(const n of NODES){const d=Math.hypot(n.x-x,n.y-y); if(d<bd){bd=d;bn=n}} map.title=bd<18?bn.c.n:''; } map.style.cursor=(hit||map.title)?'pointer':'crosshair'; });
+
+// ---------- view + legend ----------
+function setView(v){S.view=v; $('vM').setAttribute('aria-pressed',v==='m'); $('vG').setAttribute('aria-pressed',v==='g'); $('vD').setAttribute('aria-pressed',v==='d'); legend(); dirtyHeat=true;}
+$('vM').onclick=()=>setView('m'); $('vG').onclick=()=>setView('g'); $('vD').onclick=()=>setView('d');
+function legend(){ const el=$('legend'); if(!COL.m) return; const v=S.view;
+  if(v==='d') el.innerHTML=`<span>${L('mump2p first','önce mump2p')}</span><span class="ramp" style="background:linear-gradient(90deg,${COL.m},${COL.land},${COL.g})"></span><span>${L('Gossipsub first','önce Gossipsub')}</span>`;
+  else { const a=v==='g'?COL.g2:COL.m2, b=v==='g'?COL.gdeep:COL.mdeep;
+    el.innerHTML=`<span>0 ms</span><span class="ramp" style="background:linear-gradient(90deg,${a},${b})"></span><span>${L('deadline','sınır')} ┄</span><span class="ramp" style="width:18px;background:${COL.late}"></span><span>${L('late','geç')}</span>`; } }
+
+// ---------- timeline barcode ----------
+const bc=$('bc'), bx=bc.getContext('2d');
+function drawBarcode(){ if(!R||!bc.width) return; const w=bc.width,h=bc.height,d=dpr; bx.clearRect(0,0,w,h);
+  const X=t=>t/R.tMax*w; bx.font=`${10*d}px Geist Mono, monospace`; bx.textBaseline='middle';
+  const rows=[[R.m,COL.m,h*0.42],[R.g,COL.g,h*0.68]];
+  bx.fillStyle=COL.line; bx.fillRect(0,h*0.86,w,1*d);
+  for(let s=0;s<=R.tMax;s+=(R.tMax>3000?1000:R.tMax>1200?500:250)){ bx.fillStyle=COL.faint; bx.fillRect(X(s),h*0.86,1*d,4*d); bx.textAlign=s?'center':'left'; bx.fillText(s+'',X(s)+(s?0:2*d),h*0.95); }
+  for(const [res,col,y] of rows){ bx.fillStyle=col; for(let i=0;i<N;i++){const T=res.T[i]; if(T<Infinity&&i!==PUB) bx.fillRect(X(T),y-7*d,1.4*d,14*d);} }
+  const bd=X(budget()); bx.fillStyle=COL.fg; bx.globalAlpha=0.7; for(let y=h*0.24;y<h*0.86;y+=4*d) bx.fillRect(bd,y,1*d,2*d); bx.globalAlpha=1;
+  bx.textAlign='right'; bx.fillStyle=COL.mute; bx.fillText(L('4 s attestation deadline','4 sn attestation sınırı'),bd-4*d,h*0.12);
+  const ph=X(S.t); bx.fillStyle=COL.fg; bx.fillRect(ph-1*d,0,2*d,h*0.86);
+}
+let scrub=false; const scrubTo=e=>{const r=bc.getBoundingClientRect(); S.t=Math.max(0,Math.min(R.tMax,(e.clientX-r.left)/r.width*R.tMax)); S.playing=false; playIco(); lastSound=S.t;};
+bc.addEventListener('pointerdown',e=>{scrub=true;bc.setPointerCapture(e.pointerId);scrubTo(e)}); bc.addEventListener('pointermove',e=>{if(scrub)scrubTo(e)}); bc.addEventListener('pointerup',()=>scrub=false);
+function playIco(){$('playIco').innerHTML=S.playing?'<path d="M2 1h2v8H2zM6 1h2v8H6z"/>':'<path d="M2 1l7 4-7 4z"/>'}
+$('play').onclick=()=>{ if(!S.playing&&S.t>=R.tMax) S.t=0; S.playing=!S.playing; playIco(); ensureAudio(); };
+
+// ---------- recorder + verdict ----------
+function countLE(arr,t){let lo=0,hi=arr.length;while(lo<hi){const m=(lo+hi)>>1;if(arr[m]<=t)lo=m+1;else hi=m}return lo}
+function q(a,p){return a.length?a[Math.min(a.length-1,Math.floor(a.length*p))]:NaN}
+const nf=x=>isFinite(x)?Math.round(x).toLocaleString(lang==='tr'?'tr':'en'):'∞';
+function recorder(){ if(!R) return; const t=S.t;
+  for(const [res,id] of [[R.m,'kvM'],[R.g,'kvG']]){
+    const done=countLE(res.fin,t), sent=countLE(res.tsArr,t), waste=res.wasteCum[sent];
+    const late=res.aliveN-1-countLE(res.fin,budget());
+    const mb=(sent*res.size/1048576);
+    const wl=res.proto==='g'?L('Duplicate blocks','Tekrar bloklar'):L('Unhelpful + unnecessary shards','İşe yaramayan + gereksiz shard');
+    $(id).innerHTML=`<span>${L('Decoded now','Şu an çözülmüş')}</span><span>${done} / ${res.aliveN-1}</span>
+      <span>${L('Median · p95 (final)','Medyan · p95 (son)')}</span><span>${nf(q(res.fin,.5))} · ${nf(q(res.fin,.95))} ms</span>
+      <span>${L('Miss the deadline','Sınırı kaçıran')}</span><span>${late}</span>
+      <span>${L('Uploaded so far','Şimdiye dek yüklenen')}</span><span>${mb.toFixed(mb<10?1:0)} MB</span>
+      <span>${wl}</span><span>${waste.toLocaleString()}</span>`; }
+}
+function writeVerdict(){ if(!R) return; const bud=budget(); const n=R.m.aliveN-1;
+  const lm=n-countLE(R.m.fin,bud), lg=n-countLE(R.g.fin,bud); const mm=q(R.m.fin,.5), mg=q(R.g.fin,.5);
+  const at=(S.pubAt/1000).toFixed(2).replace('.',lang==='tr'?',':'.');
+  $('verdict').innerHTML=L(
+   `Published ${at} s into the slot, the block has <b>${nf(bud)} ms</b> to reach validators before they attest. On Gossipsub <b>${lg}</b> of ${n} nodes miss that window; on mump2p <b>${lm}</b> do. Median arrival: <b>${nf(mg)} ms</b> vs <b>${nf(mm)} ms</b>.`,
+   `Slotun ${at}. saniyesinde yayınlanan bloğun, validator'lar oy vermeden önce onlara ulaşmak için <b>${nf(bud)} ms</b>'si var. Gossipsub'da ${n} düğümün <b>${lg}</b> tanesi bu pencereyi kaçırıyor, mump2p'de <b>${lm}</b> tanesi. Medyan varış: <b>${nf(mg)} ms</b>'ye karşı <b>${nf(mm)} ms</b>.`);
+}
+
+// ---------- probe: real decoding of the payload at one node ----------
+let DEC=null;
+function resetDec(){DEC=null}
+function encodeFrag(c,k){ const F=BYTES/k, out=new Uint8Array(F); for(let i=0;i<k;i++){const ci=c[i]; if(!ci) continue; const l=LOG[ci], o=i*F; for(let j=0;j<F;j++){const x=SRC[o+j]; if(x) out[j]^=EXP[l+LOG[x]];}} return out; }
+function decStep(node,t){
+  const k=S.k, F=BYTES/k; const list=R.m.recv[node];
+  if(!DEC||DEC.node!==node||DEC.k!==k||DEC.R!==R) DEC={node,k,R,n:0,rows:[],piv:[],feed:[]};
+  let want=0; while(want<list.length&&list[want].t<=t) want++;
+  if(want<DEC.n) DEC={node,k,R,n:0,rows:[],piv:[],feed:[]};
+  if(node===PUB){ if(!DEC.rows.length){ for(let i=0;i<k;i++){const c=new Uint8Array(k);c[i]=1;DEC.rows.push({c,p:SRC.slice(i*F,(i+1)*F)});DEC.piv.push(i);} } return; }
+  for(;DEC.n<want;DEC.n++){ const r=list[DEC.n]; const c=Uint8Array.from(r.v), p=encodeFrag(r.v,k); const raw=p.slice();
+    for(let q=0;q<DEC.rows.length;q++){const f=c[DEC.piv[q]]; if(!f) continue; const Rw=DEC.rows[q], lf=LOG[f]; for(let j=0;j<k;j++) if(Rw.c[j]) c[j]^=EXP[lf+LOG[Rw.c[j]]]; for(let j=0;j<F;j++) if(Rw.p[j]) p[j]^=EXP[lf+LOG[Rw.p[j]]];}
+    let pv=-1; for(let j=0;j<k;j++) if(c[j]){pv=j;break}
+    if(pv>=0){ const li=255-LOG[c[pv]]; for(let j=0;j<k;j++) if(c[j]) c[j]=EXP[li+LOG[c[j]]]; for(let j=0;j<F;j++) if(p[j]) p[j]=EXP[li+LOG[p[j]]];
+      for(const Rw of DEC.rows){const f=Rw.c[pv]; if(!f) continue; const lf=LOG[f]; for(let j=0;j<k;j++) if(c[j]) Rw.c[j]^=EXP[lf+LOG[c[j]]]; for(let j=0;j<F;j++) if(p[j]) Rw.p[j]^=EXP[lf+LOG[p[j]]];}
+      DEC.rows.push({c,p}); DEC.piv.push(pv); }
+    DEC.feed.push({t:r.t,from:r.from,inn:pv>=0,raw}); if(DEC.feed.length>6) DEC.feed.shift(); }
+}
+const hM=$('hM').getContext('2d'), hG=$('hG').getContext('2d'), mxc=$('mx').getContext('2d');
+const imgM=hM.createImageData(128,128), imgG=hG.createImageData(128,128);
+function blit(img,ctx,rowsFn){ctx.putImageData(img,0,0)}
+function stripeToImg(img,stripe,bytes,k,mode){ const rows=128/k, d=img.data; const F=BYTES/k;
+  for(let j=0,px=stripe*rows*128;j<F;j+=3,px++){const o=px*4; if(mode==='dark'){const y=Math.floor((px%(rows*128))/128); const v=(y%2)?14:22; d[o]=v;d[o+1]=v;d[o+2]=v+4;} else {d[o]=bytes[j];d[o+1]=bytes[j+1];d[o+2]=bytes[j+2];} d[o+3]=255;} }
+let lastInspKey='';
+function inspector(force){
+  if(!R) return; if(S.sel==null){ S.sel=NODES.findIndex(n=>n.c.n==='Sydney'); }
+  const i=S.sel, nd=NODES[i], t=S.t, k=S.k;
+  const key=[i,k,Math.round(t),R.ms,lang].join('|'); if(!force&&key===lastInspKey) return; lastInspKey=key;
+  const alive=R.m.alive[i];
+  $('iName').textContent=nd.c.n+(i===PUB?L(' · publisher',' · yayıncı'):'');
+  $('iMeta').textContent=L(`node #${i} · uplink ${nd.bw>10000?'1 Gbps':'50 Mbps'} · ${nd.mesh.length} mesh peers`,`düğüm #${i} · çıkış ${nd.bw>10000?'1 Gbps':'50 Mbps'} · ${nd.mesh.length} mesh eşi`);
+  const db=$('darkBtn'); const dark=S.dark.has(nd.ci); db.disabled=i===PUB; db.style.opacity=i===PUB?0.4:1;
+  db.textContent=dark?L(`Restore ${nd.c.n}`,`${nd.c.n} şehrini geri aç`):L(`Black out ${nd.c.n}`,`${nd.c.n} şehrini karart`);
+  db.onclick=()=>{ if(i===PUB) return; dark?S.dark.delete(nd.ci):S.dark.add(nd.ci); rerun(); };
+  // mump2p holdings
+  decStep(i,t);
+  const d=imgM.data; let solved=0;
+  for(let s=0;s<k;s++){ const r=DEC.piv.indexOf(s); if(r<0) stripeToImg(imgM,s,null,k,'dark'); else { const Rw=DEC.rows[r]; stripeToImg(imgM,s,Rw.p,k); let unit=true; for(let j=0;j<k;j++) if(j!==s&&Rw.c[j]){unit=false;break} if(unit) solved++; } }
+  hM.putImageData(imgM,0,0);
+  const rank=DEC.rows.length, Tm=R.m.T[i], Tg=R.g.T[i];
+  $('hMt').textContent=Tm<=t?nf(Tm)+' ms':`${rank}/${k}`;
+  // matrix
+  const mc=$('mx'); if(mc.width!==k){mc.width=k;mc.height=k} const mi=mxc.createImageData(k,k);
+  for(let s=0;s<k;s++){ const r=DEC.piv.indexOf(s); for(let j=0;j<k;j++){const o=(s*k+j)*4; let c=[10,10,14];
+      if(r>=0){const v=DEC.rows[r].c[j]; if(j===s) c=COL.m2_; else if(v){const a=0.25+0.75*v/255; c=[COL.m_[0]*a,COL.m_[1]*a,COL.m_[2]*a];} else c=[24,22,30];}
+      mi.data[o]=c[0];mi.data[o+1]=c[1];mi.data[o+2]=c[2];mi.data[o+3]=255;} }
+  mxc.putImageData(mi,0,0);
+  const re=$('rank'); if(re.children.length!==k){ re.style.gridTemplateColumns=`repeat(${k},1fr)`; re.innerHTML=''; for(let j=0;j<k;j++) re.appendChild(document.createElement('i')); }
+  [...re.children].forEach((el,j)=>el.classList.toggle('on',j<rank)); $('rankV').textContent=`${rank} / ${k}`;
+  // gossipsub holdings
+  const g=imgG.data; const have=Tg<=t; const e=R.g.inb[i];
+  for(let p=0,j=0;p<128*128;p++,j+=3){const o=p*4; if(have||i===PUB){g[o]=SRC[j];g[o+1]=SRC[j+1];g[o+2]=SRC[j+2];} else {const y=p>>7; const v=(y%2)?14:22; g[o]=v;g[o+1]=v;g[o+2]=v+4;} g[o+3]=255;}
+  hG.putImageData(imgG,0,0);
+  if(!have&&e&&e.ts<=t&&i!==PUB){ const pr=Math.min(1,(t-e.ts)/(e.ta-e.ts)); hG.fillStyle=COL.g; hG.globalAlpha=0.9; hG.fillRect(8,116,112*pr,5); hG.globalAlpha=0.35; hG.fillRect(8+112*pr,116,112*(1-pr),5); hG.globalAlpha=1; }
+  $('hGt').textContent=have||i===PUB?nf(i===PUB?0:Tg)+' ms':(e&&e.ts<=t?Math.round(100*Math.min(1,(t-e.ts)/(e.ta-e.ts)))+'%':'-');
+  // note
+  let note;
+  if(!alive) note=L('This city is blacked out. Nothing reaches it.','Bu şehir karartıldı. Buraya hiçbir şey ulaşmıyor.');
+  else if(i===PUB) note=L('The publisher holds all fragments from the start.','Yayıncı tüm parçalara baştan sahip.');
+  else if(Tm<=t&&Tg<=t) note=L(`Both have it. mump2p got here ${nf(Tg-Tm)} ms ${Tg>=Tm?'earlier':'later'}.`,`İkisinde de var. mump2p buraya ${nf(Math.abs(Tg-Tm))} ms ${Tg>=Tm?'önce':'sonra'} ulaştı.`);
+  else if(rank===0) note=L('Nothing has arrived yet.','Henüz hiçbir şey gelmedi.');
+  else if(Tm>t) note=L(`Holds ${rank} of ${k} degrees of freedom and ${solved} readable fragments. The image stays noise until the ${k}th independent shard, then every stripe resolves at once. Meanwhile this node is already relaying fresh mixtures to its peers.`,
+                       `${k} serbestlik derecesinin ${rank} tanesine ve ${solved} okunabilir parçaya sahip. Resim ${k}. bağımsız shard gelene kadar gürültü olarak kalır, sonra tüm şeritler aynı anda çözülür. Bu arada düğüm, eşlerine taze karışımlar aktarmaya çoktan başladı.`);
+  else note=L(`Decoded at ${nf(Tm)} ms. Gossipsub is ${e&&e.ts<=t?'still downloading the whole block and cannot forward a byte of it yet':'still waiting for the first byte'}.`,`${nf(Tm)} ms'de çözüldü. Gossipsub ${e&&e.ts<=t?'hâlâ bloğun tamamını indiriyor ve henüz tek bir baytını bile iletemiyor':'hâlâ ilk baytı bekliyor'}.`);
+  $('holdNote').textContent=note;
+  // feed
+  const fe=$('feed'); fe.innerHTML='';
+  if(!DEC.feed.length){ const s=document.createElement('div'); s.className='note'; s.textContent=i===PUB?L('The publisher creates shards; it does not receive them.','Yayıncı shard üretir, almaz.'):L('No shards yet.','Henüz shard yok.'); fe.appendChild(s); }
+  for(const f of DEC.feed.slice().reverse()){ const row=document.createElement('div'); row.className='fe';
+    const cv=document.createElement('canvas'); const rows=128/k; cv.width=128; cv.height=rows; const cx=cv.getContext('2d'); const im=cx.createImageData(128,rows);
+    for(let p=0,j=0;p<128*rows;p++,j+=3){im.data[p*4]=f.raw[j];im.data[p*4+1]=f.raw[j+1];im.data[p*4+2]=f.raw[j+2];im.data[p*4+3]=255} cx.putImageData(im,0,0);
+    const ev=document.createElement('span'); ev.className='ev '+(f.inn?'new':'unh'); ev.textContent=f.inn?'NEW_SHARD':'UNHELPFUL_SHARD';
+    const tt=document.createElement('span'); tt.className='t'; tt.textContent=`${NODES[f.from].c.n} · ${nf(f.t)} ms`;
+    row.append(cv,ev,tt); fe.appendChild(row); }
+}
+
+// ---------- sound ----------
+let AC=null, sound=false, lastSound=0;
+const PENTA=[0,2,4,7,9,12,14,16,19,21,24,26,28];
+function ensureAudio(){ if(sound&&!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){} } if(AC&&AC.state==='suspended') AC.resume(); }
+$('soundBtn').onclick=()=>{ sound=!sound; $('soundBtn').setAttribute('aria-pressed',sound); ensureAudio(); lastSound=S.t; };
+function pluck(freq,gain,dur,type){ const o=AC.createOscillator(), g=AC.createGain(); o.type=type||'triangle'; o.frequency.value=freq; const n=AC.currentTime;
+  g.gain.setValueAtTime(0,n); g.gain.linearRampToValueAtTime(gain,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+dur); o.connect(g).connect(AC.destination); o.start(n); o.stop(n+dur+0.02); }
+let noiseBuf=null; function thud(gain){ if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*0.06,AC.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);}
+  const s=AC.createBufferSource(); s.buffer=noiseBuf; const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=260; const g=AC.createGain(); g.gain.value=gain; s.connect(f).connect(g).connect(AC.destination); s.start(); }
+function sonify(t0,t1){ if(!sound||!AC||!R||t1<=t0) return; const res=S.view==='g'?R.g:R.m; const arr=res.byTa;
+  let lo=0,hi=arr.length; while(lo<hi){const m=(lo+hi)>>1; if(arr[m].ta<=t0) lo=m+1; else hi=m}
+  let notes=0, thuds=0;
+  for(let i=lo;i<arr.length&&arr[i].ta<=t1;i++){ const e=arr[i]; const nd=NODES[e.b];
+    if(e.k===0){ if(notes<5){ const idx=Math.floor(nd.x/1000*PENTA.length); pluck(220*Math.pow(2,PENTA[Math.min(PENTA.length-1,idx)]/12),res.proto==='g'?0.07:0.035,res.proto==='g'?0.9:0.35); notes++; } }
+    else if(e.k!==4){ if(thuds<3){ thud(0.12); thuds++; } } }
+  for(let i=0;i<N;i++){ const T=res.T[i]; if(T>t0&&T<=t1&&notes<8){ pluck(440*Math.pow(2,PENTA[(i*7)%PENTA.length]/12),0.04,1.2,'sine'); notes++; } }
+}
+
+// ---------- loop ----------
+let last=performance.now();
+function loop(now){ const dt=Math.min(64,now-last); last=now;
+  if(R&&S.playing){ const t0=S.t; S.t=Math.min(R.tMax,S.t+dt*S.speed); sonify(t0,S.t); if(S.t>=R.tMax){S.playing=false;playIco();} }
+  frameMap(); drawBarcode(); recorder(); inspector(false); $('tread').textContent=nf(S.t)+' ms';
+  requestAnimationFrame(loop); }
+
+// ---------- boot ----------
+document.fonts?.ready.then(()=>drawDefault()); drawDefault();
+setTheme(null); applyLang(); syncLabels();
+{const h=location.hash.slice(1); const sc=SCEN.find(x=>x.id===h); if(sc){const m=sc.set;S.Bi=m.Bi;S.loss=m.loss;S.cut=new Set(m.cut);S.dark=new Set(m.dark.map(cityIdx));$('B').value=S.Bi;$('loss').value=S.loss;syncLabels();}}
+rerun(); resize(); requestAnimationFrame(loop);
+})();
+
+</script>
+
+</body>
+</html>
