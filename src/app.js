@@ -9,7 +9,7 @@ const PX=128, BYTES=PX*PX*3;
 // ---------- i18n ----------
 const TR={
  sub:'Bir blok Virginia\'dan çıkıyor ve dünyanın dört bir yanındaki 159 düğüm, validator\'lar oy vermeden önce ona ulaşmak için yarışıyor. libp2p Gossipsub ile Optimum\'un mump2p\'sinin aynı ağ üzerinde bloğu nasıl taşıdığını izle, sonra o ağı boz ve kimin hâlâ zamanında yetiştiğini gör.',
- tourBtn:'▶ 60 saniyelik turu başlat', c2x:'Bir senaryo dene', labT:'Laboratuvar ayarları', labS:'meraklısı için',
+ tourBtn:'▶ 60 saniyelik turu başlat', eyebrow:'mump2p ve Gossipsub · etkileşimli simülasyon', tourSub:'7 kısa adım. İstediğin an durabilirsin.', vT:'Yan yana', share:'X\'te paylaş', gsub:'Bugünkü Ethereum. Her atlamada bloğun tamamını bekler.', msub:'Optimum. Bloğu kodlar ve ilk sharddan itibaren aktarır.', recT:'Uçuş kaydı', c2x:'Bir senaryo dene', labT:'Laboratuvar ayarları', labS:'meraklısı için',
  close:'Kapat', back:'Geri', next:'İleri',
  fan:'hayran yapımı · resmi bir Optimum ürünü değil', sound:'♪ Dinle', dark:'Koyu', light:'Açık',
  lede:'Aynı Dünya. Aynı kablolar. Aynı blok. <em>Onu taşımanın iki yolu.</em>',
@@ -57,15 +57,15 @@ let COL={};
 function readCols(){const cs=getComputedStyle(document.documentElement);const get=n=>cs.getPropertyValue(n).trim();
   const hex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
   ['bg','panel','line','line2','fg','mute','faint','land','ocean','m','m2','mdeep','g','g2','gdeep','late','dead','ok'].forEach(n=>{COL[n]=get('--'+n);COL[n+'_']=hex(COL[n])});
-  landCache=null;}
+  }
 function setTheme(t){ if(t) document.documentElement.setAttribute('data-theme',t); else document.documentElement.removeAttribute('data-theme');
   const cur=t||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
-  $('thD').setAttribute('aria-pressed',cur==='dark'); $('thL').setAttribute('aria-pressed',cur==='light'); readCols(); legend(); dirtyHeat=true; }
+  $('thD').setAttribute('aria-pressed',cur==='dark'); $('thL').setAttribute('aria-pressed',cur==='light'); readCols(); legend(); try{dirtyAll();PANES.forEach(p=>p.land=null)}catch(e){} }
 $('thD').onclick=()=>setTheme('dark'); $('thL').onclick=()=>setTheme('light');
 matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{ if(!document.documentElement.hasAttribute('data-theme')) setTheme(null); });
 
 // ---------- state ----------
-const S={k:4,Bi:3,loss:0.5,pubAt:3000,beta:3,cut:new Set(),dark:new Set(),view:'m',t:0,playing:true,speed:0.25,sel:null};
+const S={k:4,Bi:3,loss:0.5,pubAt:3000,beta:3,cut:new Set(),dark:new Set(),mode:'t',t:0,playing:true,speed:0.25,sel:null};
 const net=buildNet(CITIES,{N:160,seed:7});
 const NODES=net.nodes, N=NODES.length;
 const PUB=NODES.findIndex(n=>n.c.n==='Ashburn'&&n.bw>10000);
@@ -129,7 +129,7 @@ function syncLabels(){
 $('k').onchange=e=>{S.k=+e.target.value;resetDec();drawStripes();rerun()};
 $('B').oninput=e=>{S.Bi=+e.target.value;syncLabels();rerunSoon()};
 $('loss').oninput=e=>{S.loss=+e.target.value;syncLabels();rerunSoon()};
-$('pubAt').oninput=e=>{S.pubAt=+e.target.value;syncLabels();writeVerdict();dirtyHeat=true;drawBarcode()};
+$('pubAt').oninput=e=>{S.pubAt=+e.target.value;syncLabels();writeVerdict();dirtyAll();drawBarcode()};
 $('beta').oninput=e=>{S.beta=+e.target.value;syncLabels();rerunSoon()};
 $('speed').onchange=e=>{S.speed=+e.target.value};
 const budget=()=>4000-S.pubAt;
@@ -155,7 +155,7 @@ function rerun(){
   R={m,g,ms:performance.now()-t0};
   const mx=Math.max(m.fin.at(-1)||0, g.fin.at(-1)||0);
   R.tMax=Math.max(budget()+150, Math.ceil((mx+60)/50)*50);
-  S.t=0; S.playing=true; playIco(); resetDec(); buildChips(); writeVerdict(); dirtyHeat=true; drawBarcode(); inspector(true);
+  S.t=0; S.playing=true; playIco(); resetDec(); buildChips(); writeVerdict(); dirtyAll(); drawBarcode(); inspector(true);
   $('build').textContent=L(`${N} nodes · ${R.m.ev.length.toLocaleString()} shard transfers + ${R.g.ev.length.toLocaleString()} block transfers simulated in ${R.ms|0} ms`,`${N} düğüm · ${R.m.ev.length.toLocaleString('tr')} shard + ${R.g.ev.length.toLocaleString('tr')} blok aktarımı ${R.ms|0} ms'de simüle edildi`);
 }
 
@@ -175,25 +175,28 @@ function heatGrid(T,alive){
   return g;
 }
 
-// ---------- map rendering ----------
-const map=$('map'), ctx=map.getContext('2d'); let dpr=1, cw=0, ch=0, landCache=null, dirtyHeat=true;
-const heatCv=document.createElement('canvas'); heatCv.width=GW; heatCv.height=GH; const hctx=heatCv.getContext('2d'); const heatImg=hctx.createImageData(GW,GH);
-function resize(){const r=map.getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1); cw=r.width; ch=r.height; map.width=Math.round(cw*dpr); map.height=Math.round(ch*dpr); landCache=null; dirtyHeat=true;
+// ---------- map rendering (two panes) ----------
+let dpr=1;
+function mkPane(view,cv){const hc=document.createElement('canvas');hc.width=GW;hc.height=GH;const hx=hc.getContext('2d');
+  return {view,cv,ctx:cv.getContext('2d'),hc,hx,img:hx.createImageData(GW,GH),land:null,lastT:-1,lastV:'',cw:0};}
+const PANES=[mkPane('g',$('mapG')),mkPane('m',$('mapM'))];
+function dirtyAll(){PANES.forEach(p=>{p.lastT=-1})}
+function resize(){ dpr=Math.min(2,window.devicePixelRatio||1);
+  for(const p of PANES){ const r=p.cv.getBoundingClientRect(); p.cw=r.width; if(!r.width) continue; p.cv.width=Math.round(r.width*dpr); p.cv.height=Math.round(r.height*dpr); p.land=null; p.lastT=-1; }
   const b=$('bc'), br=b.getBoundingClientRect(); b.width=Math.round(br.width*dpr); b.height=Math.round(br.height*dpr); drawBarcode();}
-new ResizeObserver(resize).observe($('mapbox'));
-function landLayer(){ if(landCache) return landCache; const c=document.createElement('canvas'); c.width=map.width; c.height=map.height; const x=c.getContext('2d');
-  x.scale(map.width/W,map.height/H); x.fillStyle=COL.ocean; x.fillRect(0,0,W,H);
-  x.fillStyle=COL.land; x.fill(landPath); x.strokeStyle=COL.line2; x.lineWidth=0.6; x.stroke(landPath); landCache=c; return c; }
+new ResizeObserver(resize).observe($('twin'));
+function landLayer(p){ if(p.land) return p.land; const c=document.createElement('canvas'); c.width=p.cv.width; c.height=p.cv.height; const x=c.getContext('2d');
+  x.scale(c.width/W,c.height/H); x.fillStyle=COL.ocean; x.fillRect(0,0,W,H);
+  x.fillStyle=COL.land; x.fill(landPath); x.strokeStyle=COL.line2; x.lineWidth=0.6; x.stroke(landPath); p.land=c; return c; }
 const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
-let lastHeatT=-1,lastHeatView='';
-function paintHeat(){
-  if(!R) return; const t=S.t, v=S.view, bud=budget(); const d=heatImg.data; const gm=R.m.grid, gg=R.g.grid;
+function paintHeat(p){
+  if(!R) return; const t=S.t, v=p.view, bud=budget(); const d=p.img.data; const gm=R.m.grid, gg=R.g.grid;
   const A=v==='g'?COL.g2_:COL.m2_, B=v==='g'?COL.gdeep_:COL.mdeep_, late=COL.late_, land=COL.land_;
   for(let i=0;i<GW*GH;i++){ const o=i*4; let a=0,c=land; const al=ALPHA[i];
     if(v==='d'){ const x=gm[i],y=gg[i]; if(!isNaN(x)&&Math.min(x,y)<=t){ const df=Math.min(y,2e4)-Math.min(x,2e4); const s=Math.max(-1,Math.min(1,df/400)); c=s>=0?mix(land,COL.m_,0.25+0.75*s):mix(land,COL.g_,0.25+0.75*-s); a=225; } }
     else { const val=(v==='g'?gg:gm)[i]; if(!isNaN(val)&&val<=t){ if(val>bud){c=late;a=200}else{c=mix(A,B,Math.pow(val/bud,0.8));a=230} } }
     d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=a*al; }
-  hctx.putImageData(heatImg,0,0); lastHeatT=t; lastHeatView=v; dirtyHeat=false;
+  p.hx.putImageData(p.img,0,0); p.lastT=t; p.lastV=v;
 }
 // marching squares contour of grid at level lv
 function contour(grid,lv,x){
@@ -212,38 +215,34 @@ function contour(grid,lv,x){
 }
 const rankAt=(log,t)=>{let lo=0,hi=log.length;while(lo<hi){const m=(lo+hi)>>1;if(log[m][0]<=t)lo=m+1;else hi=m}return lo?log[lo-1][1]:0};
 function wrapTo(ax,bx){ if(bx-ax>500) return bx-1000; if(ax-bx>500) return bx+1000; return bx; }
-function frameMap(){
-  if(!R||!cw) return;
+function frameMap(p){
+  if(!R||!p.cw||!p.cv.width||p.cv.offsetParent===null) return;
+  const ctx=p.ctx, map=p.cv, v=p.view;
   const sx=map.width/W, sy=map.height/H; ctx.setTransform(1,0,0,1,0,0);
-  ctx.drawImage(landLayer(),0,0);
-  if(dirtyHeat||Math.abs(S.t-lastHeatT)>0.5||lastHeatView!==S.view) paintHeat();
-  ctx.save(); ctx.scale(sx,sy); ctx.clip(landPath); ctx.imageSmoothingEnabled=true; ctx.drawImage(heatCv,0,0,W,H); ctx.restore();
+  ctx.drawImage(landLayer(p),0,0);
+  if(Math.abs(S.t-p.lastT)>0.5||p.lastV!==v||p.lastT<0) paintHeat(p);
+  ctx.save(); ctx.scale(sx,sy); ctx.clip(landPath); ctx.imageSmoothingEnabled=true; ctx.drawImage(p.hc,0,0,W,H); ctx.restore();
   ctx.save(); ctx.scale(sx,sy);
-  const v=S.view, res=v==='g'?R.g:R.m;
-  // deadline contour + wavefront
+  const res=v==='g'?R.g:R.m;
   if(v!=='d'){ ctx.lineWidth=1.1/sx; ctx.setLineDash([4/sx,3/sx]); ctx.strokeStyle=COL.fg; ctx.globalAlpha=0.55; contour(res.grid,budget(),ctx); ctx.setLineDash([]);
     if(S.t>0&&S.t<R.tMax){ctx.globalAlpha=0.9; ctx.lineWidth=1.6/sx; ctx.strokeStyle=v==='g'?COL.g:COL.m; contour(res.grid,S.t,ctx);} ctx.globalAlpha=1; }
-  // severed links
   if(S.cut.size){ ctx.strokeStyle=COL.dead; ctx.globalAlpha=0.25; ctx.lineWidth=0.7/sx; ctx.setLineDash([3/sx,3/sx]); ctx.beginPath();
     for(const k of net.links){ if(!S.cut.has(net.cor.get(k))) continue; const [i,j]=k.split('_').map(Number); const A=NODES[i],B=NODES[j]; const bx=wrapTo(A.x,B.x); ctx.moveTo(A.x,A.y); ctx.lineTo(bx,B.y); if(bx!==B.x){ctx.moveTo(B.x,B.y);ctx.lineTo(wrapTo(B.x,A.x),A.y)} }
     ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; }
-  // selected node mesh
   if(S.sel!=null){ const A=NODES[S.sel]; ctx.strokeStyle=COL.fg; ctx.globalAlpha=0.35; ctx.lineWidth=0.8/sx; ctx.beginPath();
     for(const j of A.mesh){const B=NODES[j]; ctx.moveTo(A.x,A.y); ctx.lineTo(wrapTo(A.x,B.x),B.y);} ctx.stroke(); ctx.globalAlpha=1; }
-  // packets in flight
-  const t=S.t; const evs=(v==='g'?R.g:R.m).ev; const big=v==='g';
-  let drawn=0; const cap=v==='g'?600:1800; ctx.lineCap='round';
-  for(let i=0;i<evs.length;i++){ const e=evs[i]; if(e.ts>t) break; if(e.ta<=t) continue; if(++drawn>cap) break;
-    const A=NODES[e.a],B=NODES[e.b]; const bx=wrapTo(A.x,B.x); const p=(t-e.ts)/(e.ta-e.ts);
-    const mx=(A.x+bx)/2, my=(A.y+B.y)/2-Math.hypot(bx-A.x,B.y-A.y)*0.12;
-    const at=u=>{const q=1-u;return [q*q*A.x+2*q*u*mx+u*u*bx, q*q*A.y+2*q*u*my+u*u*B.y]};
-    const len=Math.min(0.25,18/Math.max(20,Math.hypot(bx-A.x,B.y-A.y)));
-    let [x,y]=at(p), [x0,y0]=at(Math.max(0,p-len)); let off=0; if(x<0)off=1000; if(x>1000)off=-1000;
-    const col=e.k===0?(big?COL.g:COL.m):e.k===4?COL.dead:COL.faint;
-    ctx.strokeStyle=col; ctx.globalAlpha=e.k===0?(big?0.95:0.7):0.45; ctx.lineWidth=(big?2.4:1.2)/Math.max(0.6,sx);
-    ctx.beginPath(); ctx.moveTo(x0+off,y0); ctx.lineTo(x+off,y); ctx.stroke(); }
-  ctx.globalAlpha=1;
-  // nodes
+  const t=S.t;
+  if(v!=='d'){ const evs=res.ev; const big=v==='g';
+    let drawn=0; const cap=v==='g'?600:1800; ctx.lineCap='round';
+    for(let i=0;i<evs.length;i++){ const e=evs[i]; if(e.ts>t) break; if(e.ta<=t) continue; if(++drawn>cap) break;
+      const A=NODES[e.a],B=NODES[e.b]; const bx=wrapTo(A.x,B.x); const q0=(t-e.ts)/(e.ta-e.ts);
+      const mx=(A.x+bx)/2, my=(A.y+B.y)/2-Math.hypot(bx-A.x,B.y-A.y)*0.12;
+      const at=u=>{const q=1-u;return [q*q*A.x+2*q*u*mx+u*u*bx, q*q*A.y+2*q*u*my+u*u*B.y]};
+      const len=Math.min(0.25,18/Math.max(20,Math.hypot(bx-A.x,B.y-A.y)));
+      let [x,y]=at(q0), [x0,y0]=at(Math.max(0,q0-len)); let off=0; if(x<0)off=1000; if(x>1000)off=-1000;
+      ctx.strokeStyle=e.k===0?(big?COL.g:COL.m):e.k===4?COL.dead:COL.faint; ctx.globalAlpha=e.k===0?(big?0.95:0.7):0.45; ctx.lineWidth=(big?2.4:1.2)/Math.max(0.6,sx);
+      ctx.beginPath(); ctx.moveTo(x0+off,y0); ctx.lineTo(x+off,y); ctx.stroke(); }
+    ctx.globalAlpha=1; }
   const rr=3.6/Math.max(0.55,sx);
   for(const nd of NODES){ const i=nd.id; const x=nd.x,y=nd.y;
     if(!R.m.alive[i]){ ctx.strokeStyle=COL.dead; ctx.lineWidth=1.2/sx; ctx.beginPath(); ctx.moveTo(x-rr,y-rr);ctx.lineTo(x+rr,y+rr);ctx.moveTo(x+rr,y-rr);ctx.lineTo(x-rr,y+rr);ctx.stroke(); continue; }
@@ -254,41 +253,53 @@ function frameMap(){
       if(!done&&r>0){ ctx.strokeStyle=COL.m; ctx.lineWidth=1.6/sx; ctx.beginPath(); ctx.arc(x,y,rr+0.6/sx,-Math.PI/2,-Math.PI/2+6.283*r/S.k); ctx.stroke(); }
       if(done&&t-T<60){ ctx.strokeStyle=COL.m2; ctx.globalAlpha=1-(t-T)/60; ctx.lineWidth=1/sx; ctx.beginPath(); ctx.arc(x,y,rr+(t-T)/8,0,6.283); ctx.stroke(); ctx.globalAlpha=1; } }
     else { const T=R.g.T[i]; const done=T<=t; ctx.fillStyle=done?COL.g:COL.panel; ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.fill();
-      const e=R.g.inb[i]; if(!done&&e&&e.ts<=t){ const p=Math.min(1,(t-e.ts)/(e.ta-e.ts)); ctx.strokeStyle=COL.g; ctx.globalAlpha=0.6; ctx.setLineDash([1.5/sx,1.5/sx]); ctx.lineWidth=1.4/sx; ctx.beginPath(); ctx.arc(x,y,rr+0.6/sx,-Math.PI/2,-Math.PI/2+6.283*p); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; }
+      const e=R.g.inb[i]; if(!done&&e&&e.ts<=t){ const q=Math.min(1,(t-e.ts)/(e.ta-e.ts)); ctx.strokeStyle=COL.g; ctx.globalAlpha=0.6; ctx.setLineDash([1.5/sx,1.5/sx]); ctx.lineWidth=1.4/sx; ctx.beginPath(); ctx.arc(x,y,rr+0.6/sx,-Math.PI/2,-Math.PI/2+6.283*q); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; }
       if(done&&t-T<60){ ctx.strokeStyle=COL.g2; ctx.globalAlpha=1-(t-T)/60; ctx.lineWidth=1/sx; ctx.beginPath(); ctx.arc(x,y,rr+(t-T)/8,0,6.283); ctx.stroke(); ctx.globalAlpha=1; } }
-    if(!(v==='d')){ ctx.strokeStyle=COL.line2; ctx.lineWidth=0.5/sx; ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.stroke(); }
+    if(v!=='d'){ ctx.strokeStyle=COL.line2; ctx.lineWidth=0.5/sx; ctx.beginPath(); ctx.arc(x,y,rr,0,6.283); ctx.stroke(); }
   }
-  // publisher + selection
   const P=NODES[PUB]; ctx.strokeStyle=COL.fg; ctx.lineWidth=1.2/sx; ctx.beginPath(); ctx.arc(P.x,P.y,rr*2.2,0,6.283); ctx.stroke();
-  ctx.fillStyle=COL.fg; ctx.font=`600 ${11/Math.max(sx,0.6)}px Geist, sans-serif`; ctx.textAlign='left'; ctx.fillText(L('publisher','yayıncı'),P.x+rr*2.6,P.y-rr*1.6);
+  const fs=11/Math.max(sx,0.45);
+  ctx.fillStyle=COL.fg; ctx.font=`600 ${fs}px Geist, sans-serif`; ctx.textAlign='left'; ctx.fillText(L('publisher','yayıncı'),P.x+rr*2.6,P.y-rr*1.6);
   if(S.sel!=null){ const Q=NODES[S.sel]; ctx.strokeStyle=COL.fg; ctx.lineWidth=1.5/sx; ctx.beginPath(); ctx.arc(Q.x,Q.y,rr*2.4,0,6.283); ctx.stroke();
     ctx.fillText(Q.c.n,Q.x+rr*2.8,Q.y+rr*3.4); }
-  // corridor badges
   for(const id in CUTXY){ const [x,y]=CUTXY[id]; const on=S.cut.has(id); const r=9/Math.max(sx,0.6);
     ctx.fillStyle=on?COL.dead:COL.panel; ctx.strokeStyle=on?COL.dead:COL.line2; ctx.lineWidth=1/sx; ctx.beginPath(); ctx.arc(x,y,r,0,6.283); ctx.fill(); ctx.stroke();
     ctx.fillStyle=on?'#fff':COL.fg; ctx.font=`${11/Math.max(sx,0.6)}px Geist, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✂',x,y+0.5/sx); ctx.textBaseline='alphabetic'; }
   ctx.restore();
 }
-// clicks on map
-map.addEventListener('click',e=>{ const r=map.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
-  for(const id in CUTXY){const [bx,by]=CUTXY[id]; if(Math.hypot(bx-x,by-y)<14){S.cut.has(id)?S.cut.delete(id):S.cut.add(id);rerun();return}}
-  let best=-1,bd=1e9; for(const n of NODES){const d=Math.hypot(n.x-x,n.y-y); if(d<bd){bd=d;best=n.id}} if(bd<18){S.sel=best;resetDec();inspector(true)} });
-map.addEventListener('mousemove',e=>{const r=map.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
-  let hit=false; for(const id in CUTXY){const [bx,by]=CUTXY[id]; if(Math.hypot(bx-x,by-y)<14){hit=true;map.title='✂ '+CORRIDORS[id][lang];break}}
-  if(!hit){ let bd=1e9,bn=null; for(const n of NODES){const d=Math.hypot(n.x-x,n.y-y); if(d<bd){bd=d;bn=n}} map.title=bd<18?bn.c.n:''; } map.style.cursor=(hit||map.title)?'pointer':'crosshair'; });
+for(const p of PANES){ const map=p.cv;
+  const pos=e=>{const r=map.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H]};
+  const badgeR=()=>14/Math.max(0.6,map.width/W/dpr*1.4);
+  map.addEventListener('click',e=>{ const [x,y]=pos(e);
+    for(const id in CUTXY){const [bx,by]=CUTXY[id]; if(Math.hypot(bx-x,by-y)<Math.max(14,badgeR())){S.cut.has(id)?S.cut.delete(id):S.cut.add(id);rerun();return}}
+    let best=-1,bd=1e9; for(const n of NODES){const d=Math.hypot(n.x-x,n.y-y); if(d<bd){bd=d;best=n.id}} if(bd<18){S.sel=best;resetDec();inspector(true); if(innerWidth<820) $('insp').scrollIntoView({behavior:'smooth',block:'start'});} });
+  map.addEventListener('mousemove',e=>{const [x,y]=pos(e);
+    let hit=false; for(const id in CUTXY){const [bx,by]=CUTXY[id]; if(Math.hypot(bx-x,by-y)<14){hit=true;map.title='✂ '+CORRIDORS[id][lang];break}}
+    if(!hit){ let bd=1e9,bn=null; for(const n of NODES){const d=Math.hypot(n.x-x,n.y-y); if(d<bd){bd=d;bn=n}} map.title=bd<18?bn.c.n:''; } map.style.cursor=(hit||map.title)?'pointer':'crosshair'; });
+}
 
 // ---------- view + legend ----------
-function setView(v){S.view=v; $('vM').setAttribute('aria-pressed',v==='m'); $('vG').setAttribute('aria-pressed',v==='g'); $('vD').setAttribute('aria-pressed',v==='d'); legend(); dirtyHeat=true;}
-$('vM').onclick=()=>setView('m'); $('vG').onclick=()=>setView('g'); $('vD').onclick=()=>setView('d');
+function setView(v){ S.mode=v; const diff=v==='d'; $('twin').classList.toggle('diff',diff); PANES[1].view=diff?'d':'m';
+  $('vT').setAttribute('aria-pressed',!diff); $('vD').setAttribute('aria-pressed',diff);
+  $('mTitle').textContent=diff?L('Who got it first','Kim önce aldı'):'mump2p';
+  $('msub').textContent=diff?L('Silver: mump2p first. Coral: Gossipsub first.','Gümüş: önce mump2p. Mercan: önce Gossipsub.'):L('Optimum. Codes the block and relays from the first shard.','Optimum. Bloğu kodlar ve ilk sharddan itibaren aktarır.');
+  legend(); dirtyAll(); requestAnimationFrame(resize); }
+$('vT').onclick=()=>setView('t'); $('vD').onclick=()=>setView('d');
 const HOWTO={
- m:['Each dot is a node. Its ring fills as coded shards arrive, and it turns solid once the node can rebuild the block. Shading shows when each area got the block; the dashed line marks the vote deadline.','Her nokta bir düğüm. Kodlu shardlar geldikçe halkası dolar, düğüm bloğu geri kurabildiğinde içi dolar. Gölgeleme her bölgenin bloğu ne zaman aldığını, kesikli çizgi oylama sınırını gösterir.'],
- g:['Each dot is a node. A dotted ring means it is downloading the whole block; it cannot pass on a single byte until the dot turns solid.','Her nokta bir düğüm. Noktalı halka, düğümün bloğun tamamını indirdiğini gösterir; nokta dolana kadar tek bir baytını bile iletemez.'],
+ t:['Each dot is a node. On the left a dotted ring means the node is still downloading the whole block and cannot pass anything on. On the right a ring fills shard by shard, and the node relays from the very first one. A dot turns solid once the node has the block; shading shows when each area got it, and the dashed line marks the vote deadline.','Her nokta bir düğüm. Solda noktalı halka, düğümün hâlâ bloğun tamamını indirdiğini ve hiçbir şey iletemediğini gösterir. Sağda halka shard shard dolar ve düğüm daha ilk sharddan aktarmaya başlar. Düğüm bloğa sahip olunca nokta dolar; gölgeleme her bölgenin bloğu ne zaman aldığını, kesikli çizgi oylama sınırını gösterir.'],
  d:['Silver areas got the block first with mump2p, coral areas with Gossipsub. The stronger the colour, the bigger the gap (full at 400 ms).','Gümüş bölgeler bloğu mump2p ile, mercan bölgeler Gossipsub ile önce aldı. Renk ne kadar güçlüyse fark o kadar büyük (400 ms\'de tam).']};
-function legend(){ const el=$('legend'); if(!COL.m) return; const v=S.view; $('howto').textContent=L(...HOWTO[v]);
+function legend(){ const el=$('legend'); if(!COL.m) return; const v=S.mode||'t'; $('howto').textContent=L(...HOWTO[v]);
   if(v==='d') el.innerHTML=`<span>${L('mump2p first','önce mump2p')}</span><span class="ramp" style="background:linear-gradient(90deg,${COL.m},${COL.land},${COL.g})"></span><span>${L('Gossipsub first','önce Gossipsub')}</span>`;
-  else { const a=v==='g'?COL.g2:COL.m2, b=v==='g'?COL.gdeep:COL.mdeep;
-    el.innerHTML=`<span>0 ms</span><span class="ramp" style="background:linear-gradient(90deg,${a},${b})"></span><span>${L('deadline','sınır')} ┄</span><span class="ramp" style="width:18px;background:${COL.late}"></span><span>${L('late','geç')}</span>`; } }
-
+  else el.innerHTML=`<span>${L('early','erken')}</span><span class="ramp" style="width:60px;background:linear-gradient(90deg,${COL.g2},${COL.gdeep})"></span><span class="ramp" style="width:60px;background:linear-gradient(90deg,${COL.m2},${COL.mdeep})"></span><span>${L('deadline','sınır')} ┄</span><span class="ramp" style="width:18px;background:${COL.late}"></span><span>${L('late','geç')}</span>`; }
+function counters(){ if(!R) return; const t=S.t, bud=budget(), n=R.m.aliveN-1;
+  if(S.mode==='d'){ let first=0,seen=0; for(let i=0;i<N;i++){ if(i===PUB||!R.m.alive[i]) continue; const a=R.m.T[i],b=R.g.T[i]; if(Math.min(a,b)<=t){seen++; if(a<b) first++;} }
+    $('cntM').textContent=`${first}/${seen}`; $('cntMl').textContent=L('got it first via mump2p','bloğu önce mump2p ile aldı'); $('barM').style.width=(seen?100*first/seen:0)+'%'; return; }
+  for(const [res,c,l,bar,dl] of [[R.g,'cntG','cntGl','barG','dlG'],[R.m,'cntM','cntMl','barM','dlM']]){
+    const done=countLE(res.fin,t); $(c).textContent=`${done}/${n}`;
+    const late=n-countLE(res.fin,bud);
+    $(l).textContent=t<bud?L('nodes have the block','düğüm bloğa sahip'):L(`${late===0?'none':late} missed the vote`,`${late===0?'hiçbiri':late} oylamayı kaçırdı`);
+    $(bar).style.width=(100*done/n)+'%'; }
+}
 // ---------- timeline barcode ----------
 const bc=$('bc'), bx=bc.getContext('2d');
 function drawBarcode(){ if(!R||!bc.width) return; const w=bc.width,h=bc.height,d=dpr; bx.clearRect(0,0,w,h);
@@ -412,17 +423,19 @@ let AC=null, sound=false, lastSound=0;
 const PENTA=[0,2,4,7,9,12,14,16,19,21,24,26,28];
 function ensureAudio(){ if(sound&&!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){} } if(AC&&AC.state==='suspended') AC.resume(); }
 $('soundBtn').onclick=()=>{ sound=!sound; $('soundBtn').setAttribute('aria-pressed',sound); ensureAudio(); lastSound=S.t; };
-function pluck(freq,gain,dur,type){ const o=AC.createOscillator(), g=AC.createGain(); o.type=type||'triangle'; o.frequency.value=freq; const n=AC.currentTime;
-  g.gain.setValueAtTime(0,n); g.gain.linearRampToValueAtTime(gain,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+dur); o.connect(g).connect(AC.destination); o.start(n); o.stop(n+dur+0.02); }
-let noiseBuf=null; function thud(gain){ if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*0.06,AC.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);}
-  const s=AC.createBufferSource(); s.buffer=noiseBuf; const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=260; const g=AC.createGain(); g.gain.value=gain; s.connect(f).connect(g).connect(AC.destination); s.start(); }
-function sonify(t0,t1){ if(!sound||!AC||!R||t1<=t0) return; const res=S.view==='g'?R.g:R.m; const arr=res.byTa;
-  let lo=0,hi=arr.length; while(lo<hi){const m=(lo+hi)>>1; if(arr[m].ta<=t0) lo=m+1; else hi=m}
-  let notes=0, thuds=0;
-  for(let i=lo;i<arr.length&&arr[i].ta<=t1;i++){ const e=arr[i]; const nd=NODES[e.b];
-    if(e.k===0){ if(notes<5){ const idx=Math.floor(nd.x/1000*PENTA.length); pluck(220*Math.pow(2,PENTA[Math.min(PENTA.length-1,idx)]/12),res.proto==='g'?0.07:0.035,res.proto==='g'?0.9:0.35); notes++; } }
-    else if(e.k!==4){ if(thuds<3){ thud(0.12); thuds++; } } }
-  for(let i=0;i<N;i++){ const T=res.T[i]; if(T>t0&&T<=t1&&notes<8){ pluck(440*Math.pow(2,PENTA[(i*7)%PENTA.length]/12),0.04,1.2,'sine'); notes++; } }
+const outP=pan=>{ if(!AC.createStereoPanner) return AC.destination; const p=AC.createStereoPanner(); p.pan.value=pan; p.connect(AC.destination); return p; };
+function pluck(freq,gain,dur,type,pan){ const o=AC.createOscillator(), g=AC.createGain(); o.type=type||'triangle'; o.frequency.value=freq; const n=AC.currentTime;
+  g.gain.setValueAtTime(0,n); g.gain.linearRampToValueAtTime(gain,n+0.005); g.gain.exponentialRampToValueAtTime(0.0001,n+dur); o.connect(g).connect(outP(pan||0)); o.start(n); o.stop(n+dur+0.02); }
+let noiseBuf=null; function thud(gain,pan){ if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*0.06,AC.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);}
+  const s=AC.createBufferSource(); s.buffer=noiseBuf; const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=260; const g=AC.createGain(); g.gain.value=gain; s.connect(f).connect(g).connect(outP(pan||0)); s.start(); }
+function sonify(t0,t1){ if(!sound||!AC||!R||t1<=t0) return;
+  for(const [res,pan] of [[R.g,-0.7],[R.m,0.7]]){ const arr=res.byTa;
+    let lo=0,hi=arr.length; while(lo<hi){const m=(lo+hi)>>1; if(arr[m].ta<=t0) lo=m+1; else hi=m}
+    let notes=0, thuds=0;
+    for(let i=lo;i<arr.length&&arr[i].ta<=t1;i++){ const e=arr[i]; const nd=NODES[e.b];
+      if(e.k===0){ if(notes<4){ const idx=Math.floor(nd.x/1000*PENTA.length); pluck(220*Math.pow(2,PENTA[Math.min(PENTA.length-1,idx)]/12),res.proto==='g'?0.06:0.03,res.proto==='g'?0.9:0.35,'triangle',pan); notes++; } }
+      else if(e.k!==4){ if(thuds<2){ thud(0.1,pan); thuds++; } } }
+    for(let i=0;i<N;i++){ const T=res.T[i]; if(T>t0&&T<=t1&&notes<7){ pluck(440*Math.pow(2,PENTA[(i*7)%PENTA.length]/12),0.035,1.2,'sine',pan); notes++; } } }
 }
 
 
@@ -457,25 +470,25 @@ const SYD=()=>NODES.findIndex(n=>n.c.n==='Sydney');
 const TOUR=[
  {t:['One block, 159 nodes, 1 second','Bir blok, 159 düğüm, 1 saniye'],
   b:['A proposer in Virginia (circled) publishes a block 3 s into the slot. Validators vote at 4 s, so every node has about one second to receive it. Nodes are placed where Ethereum infrastructure actually clusters.','Virginia\'daki bir proposer (halkalı nokta) bloğu slotun 3. saniyesinde yayınlıyor. Validator\'lar 4. saniyede oy veriyor, yani her düğümün bloğu almak için yaklaşık bir saniyesi var. Düğümler Ethereum altyapısının gerçekte yoğunlaştığı yerlere yerleştirildi.'],
-  spot:'#mapbox', run(){ setK(4); applyScen('calm'); setView('g'); rerun(); S.speed=0.25; $('speed').value='0.25'; }},
+  spot:'#twin', run(){ setK(4); applyScen('calm'); setView('t'); rerun(); S.speed=0.25; $('speed').value='0.25'; }},
  {t:['Gossipsub: wait for all of it, then pass it on','Gossipsub: hepsini bekle, sonra ilet'],
-  b:['Watch the dotted coral rings. Each node downloads the entire block before it can forward one byte, and every hop pays that full transfer time again. Far away nodes inherit all the waiting.','Noktalı mercan halkalara bak. Her düğüm tek bir bayt iletebilmek için önce bloğun tamamını indiriyor ve her atlama bu aktarım süresini baştan ödüyor. Uzaktaki düğümler tüm bu bekleyişi miras alıyor.'],
-  spot:'#mapbox', run(){ setView('g'); S.t=0; S.playing=true; playIco(); }},
+  b:['On the left, watch the dotted coral rings. Each node downloads the entire block before it can forward one byte, and every hop pays that full transfer time again. Far away nodes inherit all the waiting.','Soldaki noktalı mercan halkalara bak. Her düğüm tek bir bayt iletebilmek için önce bloğun tamamını indiriyor ve her atlama bu aktarım süresini baştan ödüyor. Uzaktaki düğümler tüm bu bekleyişi miras alıyor.'],
+  spot:'#paneG', run(){ setView('t'); S.t=0; S.playing=true; playIco(); }},
  {t:['mump2p: start passing it on from the first shard','mump2p: ilk sharddan itibaren iletmeye başla'],
-  b:['Same block, same links. Now it travels as coded shards, and a node relays fresh mixes the moment it holds anything. Rings fill bit by bit and the whole map lights up sooner. Compare the two rows of ticks under the map.','Aynı blok, aynı bağlantılar. Şimdi kodlu shardlar hâlinde yolculuk ediyor ve düğüm eline bir şey geçtiği an taze karışımlar aktarıyor. Halkalar azar azar doluyor ve tüm harita daha erken aydınlanıyor. Haritanın altındaki iki çentik sırasını karşılaştır.'],
-  spot:'#mapbox', run(){ setView('m'); S.t=0; S.playing=true; playIco(); }},
+  b:['On the right: same block, same links, but it travels as coded shards, and a node relays fresh mixes the moment it holds anything. Rings fill bit by bit and the whole map lights up sooner. Compare the two counters at the top of each map.','Sağda: aynı blok, aynı bağlantılar, ama kodlu shardlar hâlinde yolculuk ediyor ve düğüm eline bir şey geçtiği an taze karışımlar aktarıyor. Halkalar azar azar doluyor ve tüm harita daha erken aydınlanıyor. Her haritanın üstündeki iki sayacı karşılaştır.'],
+  spot:'#paneM', run(){ setView('t'); S.t=0; S.playing=true; playIco(); }},
  {t:['Inside Sydney: noise, noise, then the picture','Sydney\'nin içi: gürültü, gürültü, sonra resim'],
   b:['The probe shows what Sydney holds. Each shard alone is noise. The moment the last independent one lands, the recipes on the left form a clean diagonal and the image appears in a single frame. That decoding is real, done on the picture\'s bytes.','Sonda Sydney\'nin elindekini gösteriyor. Her shard tek başına gürültü. Son bağımsız shard geldiği an soldaki tarifler temiz bir köşegene dönüşüyor ve resim tek karede beliriyor. Bu çözme gerçek, resmin baytları üzerinde yapılıyor.'],
-  spot:'#insp', run(){ setView('m'); S.sel=SYD(); resetDec(); const T=R.m.T[S.sel]; S.t=Math.max(0,T-90); S.speed=0.1; $('speed').value='0.1'; S.playing=true; playIco(); }},
+  spot:'#insp', run(){ setView('t'); S.sel=SYD(); resetDec(); const T=R.m.T[S.sel]; S.t=Math.max(0,T-90); S.speed=0.1; $('speed').value='0.1'; S.playing=true; playIco(); }},
  {t:['Now cut the Red Sea','Şimdi Kızıldeniz\'i kes'],
-  b:['In Sep 2025 cables near Jeddah were cut. Here every Europe to Asia link through the Red Sea is gone. The map now shows who wins where: silver areas got the block first with mump2p, coral areas with Gossipsub. Read the sentence above the map.','Eylül 2025\'te Cidde açıklarında kablolar kesildi. Burada Kızıldeniz\'den geçen tüm Avrupa Asya bağlantıları gitti. Harita artık kimin nerede kazandığını gösteriyor: gümüş bölgeler bloğu mump2p ile, mercan bölgeler Gossipsub ile önce aldı. Haritanın üstündeki cümleyi oku.'],
-  spot:'#verdict', run(){ applyScen('red'); rerun(); setView('d'); S.speed=0.5; $('speed').value='0.5'; }},
+  b:['In Sep 2025 cables near Jeddah were cut. Here every Europe to Asia link through the Red Sea is gone. The view switches to who wins where: silver areas got the block first with mump2p, coral areas with Gossipsub. Read the sentence above the map.','Eylül 2025\'te Cidde açıklarında kablolar kesildi. Burada Kızıldeniz\'den geçen tüm Avrupa Asya bağlantıları gitti. Görünüm, kimin nerede kazandığına geçiyor: gümüş bölgeler bloğu mump2p ile, mercan bölgeler Gossipsub ile önce aldı. Haritanın üstündeki cümleyi oku.'],
+  spot:'#twin', run(){ applyScen('red'); rerun(); setView('d'); S.speed=0.5; $('speed').value='0.5'; }},
  {t:['Finer shards, faster spread','Daha ince shard, daha hızlı yayılım'],
   b:['So far the block was cut into 4 shards, the default in Optimum\'s dev setup. Cut it into 16 and nodes can start relaying even sooner. It is not free: more shards mean more decoding work, which this model does not charge for. You can change this in Lab settings.','Şimdiye kadar blok, Optimum\'un geliştirici kurulumundaki varsayılan olan 4 sharda bölündü. 16\'ya böl, düğümler aktarmaya daha da erken başlasın. Bedava değil: daha çok shard daha çok çözme işi demek ve bu model o maliyeti hesaba katmıyor. Bunu Laboratuvar ayarlarından değiştirebilirsin.'],
   spot:'#verdict', run(){ setK(16); rerun(); setView('d'); }},
  {t:['Your turn','Sıra sende'],
-  b:['Drop your own image into "Your block", cut any cable on the map, black out a city from the probe, or press ♪ Listen: useful shards play notes, wasted copies thud.','"Senin bloğun" kısmına kendi resmini bırak, haritada istediğin kabloyu kes, sondadan bir şehri karart ya da ♪ Dinle\'ye bas: işe yarayan shardlar nota çalar, boşa giden kopyalar boğuk ses çıkarır.'],
-  spot:'.left', run(){ setView('m'); S.t=0; S.playing=true; playIco(); }},
+  b:['Pick a scenario above the maps, cut any ✂ cable, drop your own image into "Your block", or press ♪ Listen: Gossipsub plays in your left ear, mump2p in your right. Share your result on X.','"Senin bloğun" kısmına kendi resmini bırak, haritada istediğin kabloyu kes, sondadan bir şehri karart ya da ♪ Dinle\'ye bas: işe yarayan shardlar nota çalar, boşa giden kopyalar boğuk ses çıkarır.'],
+  spot:'#paneM', run(){ setView('t'); S.t=0; S.playing=true; playIco(); }},
 ];
 let step=0;
 function showStep(i){ step=i; const st=TOUR[i]; document.querySelectorAll('.spot').forEach(e=>e.classList.remove('spot'));
@@ -490,11 +503,18 @@ $('tourPrev').onclick=()=>{ if(step>0) showStep(step-1); };
 $('tourX').onclick=endTour;
 function refreshTourText(){ if($('tour').hidden) return; const st=TOUR[step]; $('tourT').textContent=L(...st.t); $('tourB').textContent=L(...st.b); $('tourNext').textContent=step===TOUR.length-1?L('Explore','Keşfet'):L('Next','İleri'); }
 
+// ---------- share ----------
+$('shareBtn').onclick=()=>{ if(!R) return; const n=R.m.aliveN-1, bud=budget();
+  const lg=n-countLE(R.g.fin,bud), lm=n-countLE(R.m.fin,bud); const sc=SCEN.find(x=>{const m=x.set;return S.Bi===m.Bi&&S.loss===m.loss&&S.cut.size===m.cut.length&&m.cut.every(c=>S.cut.has(c))&&S.dark.size===m.dark.length});
+  const name=sc?sc.en:'Custom run'; const url='https://optimum-wind-tunnel.netlify.app/'+(sc?'#'+sc.id:'');
+  const txt=`${name} in the Optimum Wind Tunnel: ${lg} of ${n} nodes miss the vote deadline on Gossipsub, ${lm} on @get_optimum mump2p.\n\nSame Earth. Same cables. Same block.`;
+  const a=document.createElement('a'); a.href='https://x.com/intent/post?text='+encodeURIComponent(txt)+'&url='+encodeURIComponent(url); a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); };
+
 // ---------- loop ----------
 let last=performance.now();
 function loop(now){ const dt=Math.min(64,now-last); last=now;
   if(R&&S.playing){ const t0=S.t; S.t=Math.min(R.tMax,S.t+dt*S.speed); sonify(t0,S.t); if(S.t>=R.tMax){S.playing=false;playIco();} }
-  frameMap(); drawBarcode(); recorder(); inspector(false); $('tread').textContent=nf(S.t)+' ms';
+  PANES.forEach(frameMap); counters(); drawBarcode(); recorder(); inspector(false); $('tread').textContent=nf(S.t)+' ms';
   requestAnimationFrame(loop); }
 
 // ---------- boot ----------

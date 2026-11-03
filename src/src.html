@@ -46,10 +46,10 @@ header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .lede{font-size:clamp(20px,2.4vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:4px 0 0;text-wrap:balance;max-width:28ch}
 .lede em{font-style:normal;color:var(--mute)}
 .sub{color:var(--mute);max-width:78ch;margin:6px 0 0}
-.grid{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:14px;align-items:start}
-@media (max-width:1180px){.grid{grid-template-columns:minmax(0,1fr) 330px}.left{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}}
-@media (max-width:1180px){.stage{order:0}.insp{order:1}.left{order:2}}
-@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (max-width:1180px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.grid>.insp{grid-row:span 2}}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}.grid>.insp{grid-row:auto}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .left{display:flex;flex-direction:column;gap:14px;min-width:0}
 .ct{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);display:flex;align-items:center;gap:8px}
@@ -158,6 +158,35 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
 .ct .tip{margin-left:2px}
 .scenD{font-size:12px;color:var(--mute)}
 @media (max-width:560px){.tour{grid-template-columns:minmax(0,1fr)}.tourbtns{justify-content:flex-start;order:3}}
+
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:0 0 6px;font-weight:600}
+.hero .lede{font-size:clamp(28px,4.2vw,56px);font-weight:600;letter-spacing:-.035em;line-height:1.02;max-width:16ch}
+.hero .sub{font-size:clamp(15px,1.3vw,17px);max-width:60ch;margin-top:12px}
+.herocta{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.cta.big{padding:14px 20px;font-size:15px;border-radius:12px}
+.stage{gap:12px;padding:14px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.twin{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.twin.diff{grid-template-columns:minmax(0,1fr)}
+.twin.diff #paneG{display:none}
+@media (max-width:760px){.twin{grid-template-columns:minmax(0,1fr)}}
+.pane{display:flex;flex-direction:column;gap:8px;min-width:0;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel2)}
+.phead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.phead h3{margin:0;font-size:17px;display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+.psub{margin:2px 0 0;font-size:12.5px;color:var(--mute)}
+.pcount{text-align:right;display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.pcount b{font-size:clamp(22px,2.4vw,32px);font-weight:600;letter-spacing:-.02em}
+#paneG .pcount b{color:var(--g)} #paneM .pcount b{color:var(--m)}
+.pcount span{font-size:11.5px;color:var(--mute)}
+.pbar{position:relative;height:6px;border-radius:3px;background:var(--line)}
+.pbar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;width:0}
+#barG{background:var(--g)} #barM{background:var(--m)}
+.pbar s{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg);opacity:.6;text-decoration:none}
+.legend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mute);flex-wrap:wrap}
+.ramp{display:inline-block}
+.col .recorder{grid-template-columns:minmax(0,1fr)}
+.legendrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.legendrow .howto{flex:1 1 320px}
 </style>
 
 <div class="wrap">
@@ -176,22 +205,75 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
 
 <section class="hero">
   <div class="herotext">
+    <p class="eyebrow" data-i="eyebrow">mump2p vs Gossipsub · interactive simulation</p>
     <p class="lede" data-i="lede" data-html="1">Same Earth. Same cables. Same block. <em>Two ways to move it.</em></p>
     <p class="sub" data-i="sub">A block leaves Virginia and 159 nodes around the world race to get it before validators vote. Watch libp2p Gossipsub and Optimum's mump2p carry it over the same network, then break that network and see who still arrives in time.</p>
   </div>
   <div class="herocta">
-    <button class="cta" id="tourBtn" data-i="tourBtn">▶ Take the 60 second tour</button>
+    <button class="cta big" id="tourBtn" data-i="tourBtn">▶ Take the 60 second tour</button>
+    <span class="note" data-i="tourSub">7 short steps. You can stop any time.</span>
   </div>
 </section>
 
-<div class="grid">
-  <aside class="left">
-    <div class="card">
-      <div class="ct"><span data-i="c2">Try a scenario</span></div>
-      <div class="chips" id="scen"></div>
-      <div class="note" id="scenNote"></div>
+<main class="stage" id="stage">
+    <div class="tour" id="tour" hidden>
+      <div class="tourhead"><span class="mono" id="tourN"></span><h3 id="tourT"></h3></div>
+      <div class="tourbtns"><button class="x" id="tourX" data-i="close">Close</button><button class="ghost" id="tourPrev" data-i="back">Back</button><button class="cta" id="tourNext" data-i="next">Next</button></div>
+      <p id="tourB"></p>
     </div>
+    <p class="verdict" id="verdict"></p>
+    <div class="toolbar">
+      <div class="chips" id="scen"></div>
+      <div class="hspace"></div>
+      <div class="seg" role="group" aria-label="View"><button id="vT" aria-pressed="true" data-i="vT">Side by side</button><button id="vD" aria-pressed="false" data-i="vD">Who wins where</button></div>
+      <button class="iconbtn" id="shareBtn" data-i="share">Share on X</button>
+    </div>
+    <div class="twin" id="twin">
+      <section class="pane" id="paneG">
+        <div class="phead"><div><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span></h3><p class="psub" data-i="gsub">Today's Ethereum. Waits for the whole block at every hop.</p></div>
+          <div class="pcount"><b class="mono" id="cntG">0</b><span id="cntGl"></span></div></div>
+        <div class="mapbox"><canvas id="mapG"></canvas></div>
+        <div class="pbar"><i id="barG"></i></div>
+      </section>
+      <section class="pane" id="paneM">
+        <div class="phead"><div><h3><span class="dot" style="background:var(--m)"></span><span lang="en" id="mTitle">mump2p</span></h3><p class="psub" id="msub" data-i="msub">Optimum. Codes the block and relays from the first shard.</p></div>
+          <div class="pcount"><b class="mono" id="cntM">0</b><span id="cntMl"></span></div></div>
+        <div class="mapbox"><canvas id="mapM"></canvas><div class="hint" data-i="hint">Click any dot to probe that node · click ✂ to cut a cable corridor</div></div>
+        <div class="pbar"><i id="barM"></i></div>
+      </section>
+    </div>
+    <div class="timeline">
+      <button class="play" id="play" aria-label="Play or pause"><svg viewBox="0 0 10 10" id="playIco"><path d="M2 1h2v8H2zM6 1h2v8H6z"/></svg></button>
+      <select id="speed" aria-label="Playback speed"><option value="0.1">0.1×</option><option value="0.25" selected>0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select>
+      <div class="barcode" id="barcode"><canvas id="bc"></canvas></div>
+      <div class="tread" id="tread">0 ms</div>
+    </div>
+    <div class="legendrow"><div class="legend" id="legend"></div><p class="howto" id="howto"></p></div>
+    <p class="note" id="scenNote"></p>
+</main>
 
+<div class="grid">
+  <aside class="card insp" id="insp">
+    <div class="ct"><span data-i="probe">Probe: inside one node</span><button class="tip" data-tip="probe" aria-label="?">?</button></div>
+    <div><h2 id="iName">-</h2><div class="meta" id="iMeta"></div></div>
+    <div class="holds">
+      <figure><canvas id="hM" width="128" height="128"></canvas><figcaption><span>mump2p</span><span class="mono" id="hMt"></span></figcaption></figure>
+      <figure><canvas id="hG" width="128" height="128"></canvas><figcaption><span>Gossipsub</span><span class="mono" id="hGt"></span></figcaption></figure>
+    </div>
+    <div class="note" id="holdNote"></div>
+    <div class="split">
+      <canvas class="matrix" id="mx" width="32" height="32" aria-label="coefficient matrix"></canvas>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div class="lab" style="font-size:12px"><span class="note"><span data-i="rankL">Independent shards (rank)</span><button class="tip" data-tip="rank" aria-label="?">?</button></span><span class="mono" id="rankV"></span></div>
+        <div class="rank" id="rank"></div>
+        <div class="note" data-i="mxN">Left: the mixing recipes this node holds, solved as far as possible. When they form a clean diagonal, every piece of the block is recovered.</div>
+      </div>
+    </div>
+    <div class="ct"><span data-i="feedT">Shards arriving here</span><button class="tip" data-tip="feed" aria-label="?">?</button></div>
+    <div class="feed" id="feed"></div>
+    <button class="danger" id="darkBtn"></button>
+  </aside>
+  <div class="col">
     <div class="card">
       <div class="ct"><span data-i="c3">Sabotage</span><button class="tip" data-tip="cut" aria-label="?">?</button></div>
       <div class="chips" id="cuts"></div>
@@ -213,7 +295,8 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
       <div class="stripes" id="stripes"></div>
       <div class="note" id="fragNote"></div>
     </div>
-
+  </div>
+  <div class="col">
     <details class="card lab" id="labBox">
       <summary class="ct"><span data-i="labT">Lab settings</span><span class="note" data-i="labS">for the curious</span></summary>
       <label class="f"><span class="lab"><span><span data-i="kL">Shards per block (k)</span><button class="tip" data-tip="k" aria-label="?" type="button">?</button></span><span class="v" id="kV">4</span></span>
@@ -227,55 +310,14 @@ details.lab .note{letter-spacing:0;text-transform:none;font-weight:400}
       <label class="f"><span class="lab"><span><span data-i="betaL">Shard budget per peer (β)</span><button class="tip" data-tip="beta" aria-label="?" type="button">?</button></span><span class="v" id="betaV"></span></span>
         <input type="range" id="beta" min="1.5" max="6" step="0.5" value="3"></label>
     </details>
-  </aside>
-
-  <main class="stage">
-    <div class="tour" id="tour" hidden>
-      <div class="tourhead"><span class="mono" id="tourN"></span><h3 id="tourT"></h3></div>
-      <div class="tourbtns"><button class="x" id="tourX" data-i="close">Close</button><button class="ghost" id="tourPrev" data-i="back">Back</button><button class="cta" id="tourNext" data-i="next">Next</button></div>
-      <p id="tourB"></p>
-    </div>
-    <p class="verdict" id="verdict"></p>
-    <div class="stagebar">
-      <div class="seg" role="group" aria-label="View">
-        <button id="vM" aria-pressed="true">mump2p</button><button id="vG" aria-pressed="false">Gossipsub</button><button id="vD" aria-pressed="false" data-i="vD">Who wins where</button>
-      </div>
-      <div class="legend" id="legend"></div>
-    </div>
-    <p class="howto" id="howto"></p>
-    <div class="mapbox" id="mapbox"><canvas id="map"></canvas><div class="hint" data-i="hint">Click any dot to probe that node · click ✂ to cut a cable corridor</div></div>
-    <div class="timeline">
-      <button class="play" id="play" aria-label="Play or pause"><svg viewBox="0 0 10 10" id="playIco"><path d="M2 1h2v8H2zM6 1h2v8H6z"/></svg></button>
-      <select id="speed" aria-label="Playback speed"><option value="0.1">0.1×</option><option value="0.25" selected>0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option></select>
-      <div class="barcode" id="barcode"><canvas id="bc"></canvas></div>
-      <div class="tread" id="tread">0 ms</div>
-    </div>
+    <div class="card">
+      <div class="ct"><span data-i="recT">Flight recorder</span></div>
     <div class="recorder">
       <div class="proto"><h3><span class="dot" style="background:var(--m)"></span><span lang="en">mump2p</span> <span class="note" data-i="rlnc">RLNC shards</span></h3><div class="kv" id="kvM"></div></div>
       <div class="proto"><h3><span class="dot" style="background:var(--g)"></span><span lang="en">Gossipsub</span> <span class="note" data-i="full">full block</span></h3><div class="kv" id="kvG"></div></div>
     </div>
-  </main>
-
-  <aside class="card insp" id="insp">
-    <div class="ct"><span data-i="probe">Probe: inside one node</span><button class="tip" data-tip="probe" aria-label="?">?</button></div>
-    <div><h2 id="iName">-</h2><div class="meta" id="iMeta"></div></div>
-    <div class="holds">
-      <figure><canvas id="hM" width="128" height="128"></canvas><figcaption><span>mump2p</span><span class="mono" id="hMt"></span></figcaption></figure>
-      <figure><canvas id="hG" width="128" height="128"></canvas><figcaption><span>Gossipsub</span><span class="mono" id="hGt"></span></figcaption></figure>
     </div>
-    <div class="note" id="holdNote"></div>
-    <div class="split">
-      <canvas class="matrix" id="mx" width="32" height="32" aria-label="coefficient matrix"></canvas>
-      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
-        <div class="lab" style="font-size:12px"><span class="note"><span data-i="rankL">Independent shards (rank)</span><button class="tip" data-tip="rank" aria-label="?">?</button></span><span class="mono" id="rankV"></span></div>
-        <div class="rank" id="rank"></div>
-        <div class="note" data-i="mxN">Left: the mixing recipes this node holds, solved as far as possible. When they form a clean diagonal, every piece of the block is recovered.</div>
-      </div>
-    </div>
-    <div class="ct"><span data-i="feedT">Shards arriving here</span><button class="tip" data-tip="feed" aria-label="?">?</button></div>
-    <div class="feed" id="feed"></div>
-    <button class="danger" id="darkBtn"></button>
-  </aside>
+  </div>
 </div>
 
 <section class="lower">

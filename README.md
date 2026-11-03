@@ -8,13 +8,15 @@ An interactive simulation that runs Optimum's **mump2p** (RLNC coded gossip) and
 
 ## What makes it different
 
+* **Side by side on the real world.** Gossipsub on the left, mump2p on the right, the same block on the same Earth at the same moment, with live counters of who has it and who missed the vote. Switch to *Who wins where* for a difference map.
+* **Share your run.** One click posts the scenario result to X with a link straight back to it.
 * **A 60 second guided tour** walks first time visitors through the story: one block, Gossipsub waiting for the whole thing, mump2p relaying from the first shard, the probe decoding inside Sydney, a Red Sea cable cut, and finer shards. Every technical term has a `?` explanation.
 * **Your own file is really coded.** Drop an image or type a message. It is split into *k* fragments and every shard carries a random coefficient vector over GF(2⁸). Relays recode without decoding. The probe runs Gaussian elimination on the actual bytes, and the decoded image matches the source pixel for pixel.
 * **Probe any node.** Watch its coefficient matrix fill in echelon form, see shards arrive with Optimum's own trace names (`NEW_SHARD`, `UNHELPFUL_SHARD`), and see the image stay noise until the *k*th independent shard, then resolve at once. The Gossipsub side shows the store and forward wait for the whole block.
 * **Real geography.** 160 nodes in 38 hosting hubs, latency from great circle distance at fibre speed, bandwidth split 20% at 1 Gbps / 80% at 50 Mbps as in the OptimumP2P paper's Ethshadow runs.
 * **Sabotage.** Cut eight real cable corridors (Red Sea, Baltic, Transatlantic…) or black out a city.
 * **Propagation isochrones instead of a race bar.** Arrival time is drawn like a weather map, with the 4 s attestation deadline as a contour, plus a "who wins where" difference map.
-* **Listen.** Every useful arrival plays a note pitched by longitude, every wasted copy a dull thud.
+* **Listen in stereo.** Gossipsub plays in the left ear, mump2p in the right: useful arrivals are notes pitched by longitude, wasted copies a dull thud.
 
 ## Fairness
 
