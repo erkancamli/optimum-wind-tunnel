@@ -9,6 +9,12 @@ const PX=128, BYTES=PX*PX*3;
 // ---------- i18n ----------
 const TR={
  sub:'Ethereum validator\'ları her slotun dördüncü saniyesinde oy verir. Gerçek bir denizaltı kablosunu kes, bir veri merkezini karart ve bugünkü Gossipsub ile Optimum\'un mump2p\'sinde kaç tanesinin bloğu kaçırdığını say. Buradaki her shard gerçekten kodlanıyor, her düğüm gerçekten çözüyor.',
+ faqT:'Sık sorulan sorular',
+ q1:'mump2p nedir?', a1:'mump2p (eski adıyla OptimumP2P), Optimum\'un eşler arası yayılım protokolü. libp2p içinde çalışır ve Gossipsub mesh\'ini kullanır, ama mesajın tamamını iletmek yerine rastgele doğrusal ağ kodlamasıyla (RLNC) üretilmiş kodlu shardlar gönderir. Ekim 2026\'da Optimum gateway üzerinden Ethereum mainnet\'te canlıya geçti.',
+ q2:'Rastgele doğrusal ağ kodlaması (RLNC) nedir?', a2:'RLNC veriyi k parçaya böler ve bu parçaların sonlu bir cisim üzerinde, burada GF(2⁸), rastgele doğrusal kombinasyonlarını gönderir. Herhangi k bağımsız kombinasyon orijinali geri kurmaya yeter. Aktarıcılar ellerindeki kombinasyonları çözmeden yeni kombinasyonlara karıştırabilir, böylece ilk parça gelir gelmez işe yarar veri iletebilir.',
+ q3:'mump2p, Gossipsub\'dan nasıl farklı?', a3:'Ethereum\'un bugün kullandığı Gossipsub, bir bloğu ancak düğüm onun tamamını aldıktan sonra iletir; her atlama aktarım süresini baştan öder. mump2p kodlu shardları hemen iletir ve düğümün belirli parçalara değil herhangi k bağımsız sharda ihtiyacı vardır; tek bir yoldaki yavaş ya da kayıp paketler önemini yitirir.',
+ q4:'Yayılım hızı Ethereum validator\'ları için neden önemli?', a4:'Attester\'lar her 12 saniyelik slotun 4. saniyesinde oy verir. O ana kadar bloğu almamış bir validator yanlış head\'e oy verir ve ödül kaybeder. Geç yayınlanan bloklar ve ağ sorunları bunu kötüleştirir; kablo kesintisi senaryoları tam olarak bunu gösteriyor.',
+ q5:'Bu resmi bir Optimum aracı mı?', a5:'Hayır. Optimum Wind Tunnel, Optimum topluluğu için ecamli tarafından yapılmış, hayran yapımı ve açık kaynak bir simülasyon. Yayınlanmış OptimumP2P makalesini, mump2p dokümanlarını ve geliştirici varsayılanlarını izler; bir simülasyondur, benchmark değildir.',
  tourBtn:'▶ 60 saniyelik turu başlat', eyebrow:'<span lang="en">Optimum Wind Tunnel</span> · blok yayılımı için stres testi', tourSub:'7 kısa adım. İstediğin an durabilirsin.', vT:'Yan yana', share:'X\'te paylaş', gsub:'Ethereum\'un bugün kullandığı. Düğüm her baytı almadan hiçbir şey aktarmaz.', msub:'Optimum\'un kodlu gossip\'i. Düğümler çözmeden önce taze karışımları iletir.', recT:'Uçuş kaydı', c2x:'Bir senaryo dene', labT:'Laboratuvar ayarları', labS:'meraklısı için',
  close:'Kapat', back:'Geri', next:'İleri',
  fan:'hayran yapımı · resmi bir Optimum ürünü değil', sound:'♪ Dinle', dark:'Koyu', light:'Açık',
@@ -39,7 +45,7 @@ const TR={
  foot:'Optimum topluluğu için ecamli tarafından yapıldı. Bir simülasyondur, benchmark değildir.'
 };
 const EN={}; document.querySelectorAll('[data-i]').forEach(el=>{EN[el.dataset.i]=el.dataset.html?el.innerHTML:el.textContent});
-let lang='en'; try{ if((localStorage.getItem('wt-lang')||(navigator.language||'').slice(0,2))==='tr') lang='tr'; }catch(e){}
+let lang='en'; try{ if(window.WT_LANG) lang=window.WT_LANG; else if((localStorage.getItem('wt-lang')||(navigator.language||'').slice(0,2))==='tr') lang='tr'; }catch(e){}
 const L=(en,tr)=>lang==='tr'?tr:en;
 function applyLang(){
   document.documentElement.lang=lang;

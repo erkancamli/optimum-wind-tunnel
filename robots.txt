@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://optimum-wind-tunnel.netlify.app/sitemap.xml

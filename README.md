@@ -1,5 +1,7 @@
 # Optimum Wind Tunnel
 
+**Live:** https://optimum-wind-tunnel.netlify.app · [Türkçe](https://optimum-wind-tunnel.netlify.app/tr/)
+
 **What happens to a block when the Red Sea goes dark?**
 
 An interactive simulation that runs Optimum's **mump2p** (RLNC coded gossip) and libp2p **Gossipsub** over the same network laid on real cities, fibre distances and undersea cable corridors.
