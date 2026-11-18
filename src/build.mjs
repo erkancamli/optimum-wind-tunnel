@@ -33,6 +33,7 @@ function head(l){ const m=META[l], url=SITE+m.path;
 <title>${esc(m.title)}</title>
 <meta name="description" content="${esc(m.desc)}">
 <meta name="author" content="ecamli">
+<meta name="google-site-verification" content="G_-617-rOrrDY4QmNbmML97R96TJ50qi-sqWykD0IRk">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${url}">
 <link rel="alternate" hreflang="en" href="${SITE}/">
